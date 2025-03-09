@@ -346,14 +346,14 @@ pypkg snapshot /path/to/project -o custom_snapshots
 
 ### Gitignore Integration
 
-Snapshots respect your `.gitignore` patterns, but also support special `#spkg` prefixed patterns that only apply to snapshots:
+Snapshots respect your `.gitignore` patterns, but also support special `#pypkg` prefixed patterns that only apply to snapshots:
 
 ```
 # Regular .gitignore pattern (ignored by Git and snapshots)
 __pycache__/
 
 # Snapshot-specific pattern (ignored by snapshots only)
-#spkg secrets.json
+#pypkg secrets.json
 ```
 
 ### Automatic Backups

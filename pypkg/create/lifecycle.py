@@ -42,6 +42,12 @@ def rename_project(old_name, new_name, skip_github=False, base_dir=None):
     Rename a project, updating all references to the old name,
     and optionally renaming the GitHub repository.
     
+    This function performs a comprehensive scan of the project to replace:
+    - The package directory name
+    - All occurrences of the old name in file contents
+    - All occurrences of the sanitized old name in file contents
+    - Files with the old name or sanitized old name in their filename
+    
     Args:
         old_name: Current name of the package
         new_name: New name for the package
@@ -67,19 +73,169 @@ def rename_project(old_name, new_name, skip_github=False, base_dir=None):
     # Update config file
     update_config_file(config, new_name, config_path)
     
-    # Rename package directory and update file references
-    rename_package_directory(base_dir, old_sanitized, new_sanitized)
-    update_test_files(base_dir, old_sanitized, new_sanitized)
-    update_setup_py(base_dir, old_name, new_name, old_sanitized, new_sanitized, github_info)
-    update_readme(base_dir, old_name, new_name, old_sanitized)
+    # Rename package directory
+    rename_directory(base_dir, old_sanitized, new_sanitized)
+    
+    # Track renamed files to avoid processing them twice
+    renamed_files = set()
+    
+    # First pass: rename files with old_name or old_sanitized in their names
+    renamed_files.update(rename_files_with_pattern(base_dir, old_name, new_name, old_sanitized, new_sanitized))
+    
+    # Second pass: update content in all files
+    update_file_contents_recursively(base_dir, old_name, new_name, old_sanitized, new_sanitized, renamed_files)
     
     # Handle GitHub repository renaming if applicable
     handle_github_rename(github_info, old_name, new_name, base_dir, skip_github)
     
     display_success(f"\nProject successfully renamed from '{old_name}' to '{new_name}'")
-    display_info("You may need to manually update some references in your code.")
+    display_info("All references to the old name have been updated.")
     return 0
 
+def rename_directory(base_dir, old_sanitized, new_sanitized):
+    """
+    Rename the package directory.
+    
+    Args:
+        base_dir: Base directory
+        old_sanitized: Sanitized old package name
+        new_sanitized: Sanitized new package name
+    """
+    old_pkg_dir = os.path.join(base_dir, old_sanitized)
+    new_pkg_dir = os.path.join(base_dir, new_sanitized)
+    
+    if os.path.exists(old_pkg_dir) and os.path.isdir(old_pkg_dir):
+        if os.path.exists(new_pkg_dir):
+            raise PackageError(f"Cannot rename: Directory {new_pkg_dir} already exists")
+        os.rename(old_pkg_dir, new_pkg_dir)
+        display_info(f"Renamed package directory: {old_sanitized} → {new_sanitized}")
+
+def rename_files_with_pattern(base_dir, old_name, new_name, old_sanitized, new_sanitized):
+    """
+    Rename all files containing the old name pattern in their filename.
+    
+    Args:
+        base_dir: Base directory
+        old_name: Old package name
+        new_name: New package name
+        old_sanitized: Sanitized old package name
+        new_sanitized: Sanitized new package name
+        
+    Returns:
+        Set of paths of renamed files
+    """
+    renamed_files = set()
+    
+    for root, dirs, files in os.walk(base_dir):
+        # Skip .git directory and any hidden directories
+        dirs[:] = [d for d in dirs if not d.startswith('.')]
+        
+        # Process each file in this directory
+        for filename in files:
+            file_path = os.path.join(root, filename)
+            
+            # Skip binary files
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    # Just try to read a bit to see if it's text
+                    f.read(4096)
+            except (UnicodeDecodeError, IOError):
+                continue
+            
+            # Check if filename contains old_name or old_sanitized
+            old_name_in_filename = old_name in filename
+            old_sanitized_in_filename = old_sanitized in filename
+            
+            if old_name_in_filename or old_sanitized_in_filename:
+                # Create new filename
+                new_filename = filename
+                if old_name_in_filename:
+                    new_filename = new_filename.replace(old_name, new_name)
+                if old_sanitized_in_filename:
+                    new_filename = new_filename.replace(old_sanitized, new_sanitized)
+                
+                # Rename the file
+                new_file_path = os.path.join(root, new_filename)
+                if not os.path.exists(new_file_path):
+                    os.rename(file_path, new_file_path)
+                    display_info(f"Renamed file: {file_path} → {new_file_path}")
+                    renamed_files.add(new_file_path)
+    
+    return renamed_files
+
+def update_file_contents_recursively(base_dir, old_name, new_name, old_sanitized, new_sanitized, renamed_files=None):
+    """
+    Update references to old name and old sanitized name in all text files.
+    
+    Args:
+        base_dir: Base directory
+        old_name: Old package name
+        new_name: New package name
+        old_sanitized: Sanitized old package name
+        new_sanitized: Sanitized new package name
+        renamed_files: Set of files that have been renamed (to avoid processing them twice)
+    """
+    if renamed_files is None:
+        renamed_files = set()
+    
+    # Create a counter for modified files
+    files_modified = 0
+    
+    # Extensions to process - add more as needed
+    text_extensions = {
+        '.py', '.md', '.txt', '.rst', '.json', '.yaml', '.yml', 
+        '.toml', '.ini', '.cfg', '.html', '.css', '.js',
+        '.sh', '.bat', '.ps1', '.dockerfile', '.svg'
+    }
+    
+    for root, dirs, files in os.walk(base_dir):
+        # Skip .git directory and any hidden directories
+        dirs[:] = [d for d in dirs if not d.startswith('.')]
+        
+        # Process each file in this directory
+        for filename in files:
+            file_path = os.path.join(root, filename)
+            
+            # Skip if this file was already renamed
+            if file_path in renamed_files:
+                continue
+                
+            # Skip non-text files and files with extensions we don't care about
+            _, ext = os.path.splitext(filename)
+            if ext.lower() not in text_extensions:
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        # Just try to read a bit to see if it's text
+                        f.read(4096)
+                except (UnicodeDecodeError, IOError):
+                    continue
+            
+            # Update file content
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                
+                # Check if content contains any patterns we need to replace
+                original_content = content
+                
+                # Replace package name
+                if old_name in content:
+                    content = content.replace(old_name, new_name)
+                
+                # Replace sanitized package name
+                if old_sanitized in content:
+                    content = content.replace(old_sanitized, new_sanitized)
+                
+                # Write content back if modified
+                if content != original_content:
+                    with open(file_path, 'w', encoding='utf-8') as f:
+                        f.write(content)
+                    files_modified += 1
+            except (UnicodeDecodeError, IOError):
+                # Skip binary files or files with encoding issues
+                continue
+    
+    display_info(f"Updated content in {files_modified} files")
 
 def validate_rename_parameters(old_name, base_dir):
     """
@@ -106,6 +262,20 @@ def validate_rename_parameters(old_name, base_dir):
     
     return config, config_path
 
+def rename_package_directory(base_dir, old_sanitized, new_sanitized):
+    """
+    Rename the package directory.
+    
+    Args:
+        base_dir: Base directory
+        old_sanitized: Sanitized old package name
+        new_sanitized: Sanitized new package name
+    """
+    old_pkg_dir = os.path.join(base_dir, old_sanitized)
+    new_pkg_dir = os.path.join(base_dir, new_sanitized)
+    if os.path.exists(old_pkg_dir) and os.path.isdir(old_pkg_dir):
+        os.rename(old_pkg_dir, new_pkg_dir)
+        display_info(f"Renamed package directory: {old_sanitized} → {new_sanitized}")
 
 def check_github_integration(base_dir, skip_github):
     """
@@ -148,22 +318,6 @@ def update_config_file(config, new_name, config_path):
     config["package_name"] = new_name
     save_config(config, config_path)
     display_info(f"Updated config file with new package name: {new_name}")
-
-
-def rename_package_directory(base_dir, old_sanitized, new_sanitized):
-    """
-    Rename the package directory.
-    
-    Args:
-        base_dir: Base directory
-        old_sanitized: Sanitized old package name
-        new_sanitized: Sanitized new package name
-    """
-    old_pkg_dir = os.path.join(base_dir, old_sanitized)
-    new_pkg_dir = os.path.join(base_dir, new_sanitized)
-    if os.path.exists(old_pkg_dir) and os.path.isdir(old_pkg_dir):
-        os.rename(old_pkg_dir, new_pkg_dir)
-        display_info(f"Renamed package directory: {old_sanitized} → {new_sanitized}")
 
 
 def update_test_files(base_dir, old_sanitized, new_sanitized):

@@ -4,18 +4,7 @@ Core functionality for creating Python package structures.
 import os
 from pathlib import Path
 
-from pkgmngr.common.templates import (
-    INIT_PY_TEMPLATE,
-    MAIN_PY_TEMPLATE,
-    LICENSE_MIT,
-    RUN_TESTS_PY_TEMPLATE,
-    TEST_PY_TEMPLATE,
-    PYPROJECT_TOML_TEMPLATE,
-    GITIGNORE_TEMPLATE,
-    README_TEMPLATE,
-    SETUP_PY_TEMPLATE,
-    MANIFEST_IN_TEMPLATE
-)
+from pkgmngr.common.templates import render_template
 from pkgmngr.common.utils import create_file, create_directory, sanitize_package_name
 from pkgmngr.common.errors import PackageError, try_operation, assert_condition
 
@@ -165,13 +154,13 @@ def create_package_module_files(package_dir, sanitized_name):
     """
     try:
         try_operation(
-            lambda: create_file(package_dir / "__init__.py", INIT_PY_TEMPLATE.format(package_name=sanitized_name)),
+            lambda: create_file(package_dir / "__init__.py", render_template('init_py')),
             f"Failed to create __init__.py",
             PackageError
         )
         
         try_operation(
-            lambda: create_file(package_dir / "__main__.py", MAIN_PY_TEMPLATE.format(package_name=sanitized_name)),
+            lambda: create_file(package_dir / "__main__.py", render_template('main_py')),
             f"Failed to create __main__.py",
             PackageError
         )
@@ -192,13 +181,13 @@ def create_test_files(tests_dir, sanitized_name):
     """
     try:
         try_operation(
-            lambda: create_file(tests_dir / f"test_{sanitized_name}.py", TEST_PY_TEMPLATE.format(package_name=sanitized_name)),
+            lambda: create_file(tests_dir / f"test_{sanitized_name}.py", render_template('test_py')),
             f"Failed to create test_{sanitized_name}.py",
             PackageError
         )
         
         try_operation(
-            lambda: create_file(tests_dir / "run_tests.py", RUN_TESTS_PY_TEMPLATE.format(package_name=sanitized_name)),
+            lambda: create_file(tests_dir / "run_tests.py", render_template('run_tests_py')),
             f"Failed to create run_tests.py",
             PackageError
         )
@@ -246,12 +235,7 @@ def create_setup_py(root_dir, sanitized_name, package_name, author, github_usern
     try_operation(
         lambda: create_file(
             root_dir / "setup.py", 
-            SETUP_PY_TEMPLATE.format(
-                package_name=package_name,
-                sanitized_name=sanitized_name,
-                author=author,
-                github_username=github_username
-            )
+            render_template('setup_py')
         ),
         f"Failed to create setup.py",
         PackageError
@@ -273,10 +257,7 @@ def create_readme(root_dir, package_name, sanitized_name):
     try_operation(
         lambda: create_file(
             root_dir / "README.md", 
-            README_TEMPLATE.format(
-                package_name=package_name,
-                sanitized_name=sanitized_name
-            )
+            render_template('readme')
         ),
         f"Failed to create README.md",
         PackageError
@@ -297,25 +278,25 @@ def create_misc_files(root_dir, year, author):
     """
     try:
         try_operation(
-            lambda: create_file(root_dir / "MANIFEST.in", MANIFEST_IN_TEMPLATE),
+            lambda: create_file(root_dir / "MANIFEST.in", render_template('manifest_in')),
             f"Failed to create MANIFEST.in",
             PackageError
         )
         
         try_operation(
-            lambda: create_file(root_dir / "pyproject.toml", PYPROJECT_TOML_TEMPLATE),
+            lambda: create_file(root_dir / "pyproject.toml", render_template('pyproject_toml')),
             f"Failed to create pyproject.toml",
             PackageError
         )
         
         try_operation(
-            lambda: create_file(root_dir / "LICENSE", LICENSE_MIT.format(year=year, author=author)),
+            lambda: create_file(root_dir / "LICENSE", render_template('license_mit')),
             f"Failed to create LICENSE",
             PackageError
         )
         
         try_operation(
-            lambda: create_file(root_dir / ".gitignore", GITIGNORE_TEMPLATE),
+            lambda: create_file(root_dir / ".gitignore", render_template('gitignore')),
             f"Failed to create .gitignore",
             PackageError
         )

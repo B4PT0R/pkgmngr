@@ -1,17 +1,17 @@
-# {package_name}
+# ${package_name}
 
-Brief description of the package.
+${description}
 
 ## Installation
 
 ```bash
-pip install {package_name}
+pip install ${package_name}
 ```
 
 ## Usage
 
 ```python
-import {sanitized_name}
+import ${sanitized_name}
 
 # Example usage
 ```
@@ -22,8 +22,8 @@ import {sanitized_name}
 
 ```bash
 # Clone the repository
-git clone https://github.com/username/{package_name}.git
-cd {package_name}
+git clone https://github.com/${github.username}/${package_name}.git
+cd ${package_name}
 
 # Create a virtual environment
 python -m venv venv

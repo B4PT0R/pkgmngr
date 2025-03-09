@@ -119,7 +119,7 @@ def get_github_info(base_dir: Optional[str] = None) -> Tuple[Optional[str], bool
         return None, False
 
 
-def create_default_config(package_name: str, output_dir: str) -> str:
+def create_default_config(package_name: str, output_dir: str,**kwargs) -> str:
     """
     Create a default configuration file for a new package.
     
@@ -131,7 +131,7 @@ def create_default_config(package_name: str, output_dir: str) -> str:
         Path to the created config file
     """
     import datetime
-    from pkgmngr.create.github import get_github_username_from_git
+    from pkgmngr.create.github import get_github_username_from_git, get_user_email_from_git
     
     # Ensure directory exists
     os.makedirs(output_dir, exist_ok=True)
@@ -140,11 +140,13 @@ def create_default_config(package_name: str, output_dir: str) -> str:
     current_year = datetime.datetime.now().year
     author = os.environ.get("USER", "Your Name")
     github_username = get_github_username_from_git()
+    author_email=get_user_email_from_git()
     
     config = {
         "package_name": package_name,
         "version": "0.1.0",
         "author": author,
+        "author_email":author_email,
         "year": str(current_year),
         "description": f"A Python package named {package_name}",
         
@@ -153,18 +155,15 @@ def create_default_config(package_name: str, output_dir: str) -> str:
             "private": False
         },
         
-        "python": {
-            "requires": ">=3.6",
-            "classifiers": [
-                "Programming Language :: Python :: 3",
-                "License :: OSI Approved :: MIT License",
-                "Operating System :: OS Independent",
-            ]
-        },
-        
-        "dependencies": {
-            "requires": [],
-            "dev_requires": [
+        "python_requires": ">=3.6",
+        "classifiers": [
+            "Programming Language :: Python :: 3",
+            "License :: OSI Approved :: MIT License",
+            "Operating System :: OS Independent",
+        ],
+        "install_requires":[],
+        "extra_requires":{
+            'dev':[
                 "pytest",
                 "pytest-cov",
                 "flake8",
@@ -172,6 +171,8 @@ def create_default_config(package_name: str, output_dir: str) -> str:
             ]
         }
     }
+
+    config.update(kwargs)
     
     # Create the config file
     config_path = os.path.join(output_dir, "pkgmngr.toml")

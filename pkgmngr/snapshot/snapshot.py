@@ -225,11 +225,11 @@ def create_default_gitignore(gitignore_path):
     Raises:
         SnapshotError: If file creation fails
     """
-    from pkgmngr.common.templates import get_gitignore_content
+    from pkgmngr.common.templates import render_template
     
     try:
         with open(gitignore_path, 'w') as f:
-            f.write(get_gitignore_content())
+            f.write(render_template('gitignore'))
         
         print(f"Created default .gitignore file at: {gitignore_path}")
     except Exception as e:

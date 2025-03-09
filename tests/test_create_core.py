@@ -22,6 +22,16 @@ def test_create_package_structure(temp_dir, monkeypatch):
         author = "Test Author"
         year = "2025"
         github_username = "test-user"
+
+        # Create config file first (mimicking the 'new' command)
+        from pkgmngr.common.config import create_default_config
+        config_path = create_default_config(
+            package_name=package_name,
+            output_dir=str(temp_dir),
+            author=author,
+            year=year,
+            github={'username':github_username, 'private':False}
+        )
         
         create_package_structure(package_name, author, year, github_username)
         
@@ -47,7 +57,7 @@ def test_create_package_structure(temp_dir, monkeypatch):
         # Check content of a file to ensure templates are properly formatted
         with open(package_dir / "__init__.py", 'r') as f:
             content = f.read()
-            assert "test_package package" in content
+            assert "test-package package" in content
             
         with open(temp_dir / "setup.py", 'r') as f:
             content = f.read()

@@ -1,5 +1,5 @@
 """
-Script to run all tests for {package_name}.
+Script to run all tests for ${package_name}.
 """
 import pytest
 import sys
@@ -12,7 +12,7 @@ def run_tests_with_coverage(verbose=False, html_report=False):
     """Run tests with coverage measurement."""
     # Start coverage measurement
     cov = coverage.Coverage(
-        source=['{package_name}'],
+        source=['${package_name}'],
         omit=['*/tests/*', '*/site-packages/*']
     )
     cov.start()
@@ -33,7 +33,7 @@ def run_tests_with_coverage(verbose=False, html_report=False):
     if html_report:
         html_dir = os.path.join('tests', 'htmlcov')
         cov.html_report(directory=html_dir)
-        print(f"\nHTML coverage report generated in {{html_dir}}")
+        print(f"\nHTML coverage report generated in {html_dir}")
     
     return exit_code
 
@@ -45,7 +45,7 @@ def run_tests(verbose=False):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Run tests for {package_name}')
+    parser = argparse.ArgumentParser(description='Run tests for ${package_name}')
     parser.add_argument('-v', '--verbose', action='store_true', help='Verbose output')
     parser.add_argument('-c', '--coverage', action='store_true', help='Run with coverage measurement')
     parser.add_argument('--html', action='store_true', help='Generate HTML coverage report')

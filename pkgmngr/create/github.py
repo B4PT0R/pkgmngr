@@ -276,6 +276,23 @@ def push_to_github(remote_url):
     except subprocess.CalledProcessError as e:
         raise GitError(f"Failed to push to GitHub repository: {remote_url}. Error: {str(e)}")
 
+def get_user_email_from_git():
+    """
+    Try to get GitHub username from git config.
+    
+    Returns:
+        str: GitHub username or None if not found
+    """
+    try:
+        # First try to get user.name
+        email = subprocess.check_output(
+            ["git", "config", "user.email"], 
+            stderr=subprocess.PIPE,
+            universal_newlines=True
+        ).strip()
+        return email
+    except subprocess.CalledProcessError:
+        return None
 
 def get_github_username_from_git():
     """
@@ -293,16 +310,4 @@ def get_github_username_from_git():
         ).strip()
         return name
     except subprocess.CalledProcessError:
-        # If user.name fails, try user.email
-        try:
-            email = subprocess.check_output(
-                ["git", "config", "user.email"], 
-                stderr=subprocess.PIPE,
-                universal_newlines=True
-            ).strip()
-            
-            if "@" in email:
-                return email.split("@")[0]
-            return email
-        except subprocess.CalledProcessError:
-            return None
+        return None

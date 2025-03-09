@@ -8,7 +8,7 @@ pkgmngr.toml
 snapshots/
 
 # Example of pkgmngr-specific exclusions
-# Git will ignore lines with a leading #pkgmngr comment, but snapshot will use them
+# Git will ignore lines with a leading #pkgmngr comment, but pkgmngr snapshot will use them
 #pkgmngr my_secret_config.ini
 #pkgmngr temporary_work/
 

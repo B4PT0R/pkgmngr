@@ -1,5 +1,5 @@
 """
-Common utility functions used across pypkg modules.
+Common utility functions used across pkgmngr modules.
 """
 import os
 import re

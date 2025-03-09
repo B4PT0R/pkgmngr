@@ -1,5 +1,5 @@
 """
-Script to run all tests for pypkg
+Script to run all tests for pkgmngr
 """
 import pytest
 import sys

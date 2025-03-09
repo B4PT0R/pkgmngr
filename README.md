@@ -1,11 +1,11 @@
-# pypkg
+# pkgmngr
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python Versions](https://img.shields.io/badge/python-3.6%2B-blue)](https://www.python.org/)
 
-A comprehensive Python package utility that streamlines creation, snapshotting, and lifecycle management of Python packages. Designed for modern Python development workflows, pypkg helps developers save time on repetitive setup tasks and enhances collaboration, including AI-assisted development.
+A comprehensive Python package utility that streamlines creation, snapshotting, and lifecycle management of Python packages. Designed for modern Python development workflows, pkgmngr helps developers save time on repetitive setup tasks and enhances collaboration, including AI-assisted development.
 
-## Why pypkg?
+## Why pkgmngr?
 
 - **Save Time**: Automate repetitive package setup and maintenance tasks
 - **Standardize Structure**: Ensure consistent package layout across projects
@@ -35,11 +35,11 @@ A comprehensive Python package utility that streamlines creation, snapshotting, 
 
 ```bash
 # Install from PyPI
-pip install pypkg
+pip install pkgmngr
 
 # Or install from source
-git clone https://github.com/B4PT0R/pypkg.git
-cd pypkg
+git clone https://github.com/B4PT0R/pkgmngr.git
+cd pkgmngr
 pip install -e .
 ```
 
@@ -47,25 +47,25 @@ pip install -e .
 
 ```bash
 # Create a new package
-pypkg new my-package
+pkgmngr new my-package
 cd my-package
 
 # Generate the package files
-pypkg create
+pkgmngr create
 
 # Initialize Git and GitHub repositories (requires GITHUB_TOKEN)
-pypkg init-repo
+pkgmngr init-repo
 
 # Make some changes to your code...
 
 # Take a snapshot of your project
-pypkg snapshot -m "Initial implementation"
+pkgmngr snapshot -m "Initial implementation"
 
 # Push changes to GitHub
-pypkg push
+pkgmngr push
 
 # Publish to PyPI when ready
-pypkg publish
+pkgmngr publish
 ```
 
 ## Detailed Usage Guide
@@ -76,30 +76,30 @@ The `new` command creates a directory with a configuration file:
 
 ```bash
 # Create a new package directory with config file
-pypkg new my-package
+pkgmngr new my-package
 ```
 
 Output:
 ```
 ✅ Created package directory and config file for 'my-package':
-- my-package/pypkg.toml
+- my-package/pkgmngr.toml
 
 To finish creating your package:
 - Change to the project's directory: `cd my-package`
-- Review and edit the config file in your favorite editor: e.g. `nano pypkg.toml`
-- Then run `pypkg create` to generate the project files.
+- Review and edit the config file in your favorite editor: e.g. `nano pkgmngr.toml`
+- Then run `pkgmngr create` to generate the project files.
 ...
 ```
 
-This creates a directory with a `pypkg.toml` configuration file. You can edit this file to customize package details before generating the actual structure.
+This creates a directory with a `pkgmngr.toml` configuration file. You can edit this file to customize package details before generating the actual structure.
 
 ```bash
 # Navigate to the new directory
 cd my-package
 
-# Review and edit the config file (pypkg.toml)
+# Review and edit the config file (pkgmngr.toml)
 # Then generate the package files
-pypkg create
+pkgmngr create
 ```
 
 Output:
@@ -147,7 +147,7 @@ Initialize Git and create a GitHub repository:
 export GITHUB_TOKEN=your_github_token_here
 
 # Initialize Git and GitHub repositories
-pypkg init-repo
+pkgmngr init-repo
 ```
 
 Output:
@@ -168,10 +168,10 @@ Snapshots create comprehensive Markdown documentation of your codebase:
 
 ```bash
 # Create a snapshot with a comment
-pypkg snapshot -m "Implemented core features"
+pkgmngr snapshot -m "Implemented core features"
 
 # List all available snapshots
-pypkg snapshot -l
+pkgmngr snapshot -l
 ```
 
 Output:
@@ -194,19 +194,19 @@ Snapshots include:
 
 ```bash
 # Restore from a specific snapshot (by number)
-pypkg restore 1
+pkgmngr restore 1
 
 # Interactively select files to restore
-pypkg restore -i
+pkgmngr restore -i
 
 # Restore only Python files
-pypkg restore -p "*.py"
+pkgmngr restore -p "*.py"
 
 # Exclude certain files
-pypkg restore -e "temp_*.py"
+pkgmngr restore -e "temp_*.py"
 
 # Specify restore mode (safe, overwrite, force)
-pypkg restore 1 -m safe
+pkgmngr restore 1 -m safe
 ```
 
 Restoration modes:
@@ -222,7 +222,7 @@ The `rename` command allows you to change your package name and automatically up
 
 ```bash
 # Rename a package (and update all references)
-pypkg rename old-package-name new-package-name
+pkgmngr rename old-package-name new-package-name
 ```
 
 This command:
@@ -231,7 +231,7 @@ This command:
 - Renames test files to match the new package name
 - Updates `setup.py` with the new package name
 - Updates the README.md with the new name
-- Updates the `pypkg.toml` configuration file
+- Updates the `pkgmngr.toml` configuration file
 
 Output:
 ```
@@ -246,28 +246,28 @@ Output:
 Example usage:
 ```bash
 # Before: my-package (directory: my_package)
-pypkg rename my-package awesome-package
+pkgmngr rename my-package awesome-package
 # After: awesome-package (directory: awesome_package)
 ```
 
-Note that this command must be run from the package root directory (where the `pypkg.toml` file is located).
+Note that this command must be run from the package root directory (where the `pkgmngr.toml` file is located).
 
 #### GitHub and PyPI Management
 
 ```bash
 # Push changes to GitHub (with interactive commit message)
-pypkg push
+pkgmngr push
 
 # Publish to TestPyPI
-pypkg publish --test
+pkgmngr publish --test
 
 # Publish to PyPI
-pypkg publish
+pkgmngr publish
 ```
 
 ## Configuration
 
-The `pypkg.toml` file contains configuration settings for your package:
+The `pkgmngr.toml` file contains configuration settings for your package:
 
 ```toml
 package_name = "my-package"
@@ -341,19 +341,19 @@ Code sections are properly syntax-highlighted based on file extensions, making y
 
 ```bash
 # Specify a different start path and output folder
-pypkg snapshot /path/to/project -o custom_snapshots
+pkgmngr snapshot /path/to/project -o custom_snapshots
 ```
 
 ### Gitignore Integration
 
-Snapshots respect your `.gitignore` patterns, but also support special `#pypkg` prefixed patterns that only apply to snapshots:
+Snapshots respect your `.gitignore` patterns, but also support special `#pkgmngr` prefixed patterns that only apply to snapshots:
 
 ```
 # Regular .gitignore pattern (ignored by Git and snapshots)
 __pycache__/
 
 # Snapshot-specific pattern (ignored by snapshots only)
-#pypkg secrets.json
+#pkgmngr secrets.json
 ```
 
 ### Automatic Backups
@@ -362,19 +362,19 @@ When restoring, a backup snapshot is automatically created:
 
 ```bash
 # Restore without creating a backup
-pypkg restore 1 --no-backup
+pkgmngr restore 1 --no-backup
 
 # Specify a custom backup location
-pypkg restore 1 -b /path/to/backup.md
+pkgmngr restore 1 -b /path/to/backup.md
 ```
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **'pypkg' command not found**
+1. **'pkgmngr' command not found**
    - Ensure the installation directory is in your PATH
-   - Try installing with `pip install --user pypkg`
+   - Try installing with `pip install --user pkgmngr`
 
 2. **GitHub authentication errors**
    - Check that your GITHUB_TOKEN environment variable is set correctly
@@ -386,7 +386,7 @@ pypkg restore 1 -b /path/to/backup.md
 
 ### Getting Help
 
-If you encounter any issues not covered here, please file an issue on GitHub: https://github.com/B4PT0R/pypkg/issues
+If you encounter any issues not covered here, please file an issue on GitHub: https://github.com/B4PT0R/pkgmngr/issues
 
 ## Development
 
@@ -394,8 +394,8 @@ If you encounter any issues not covered here, please file an issue on GitHub: ht
 
 ```bash
 # Clone the repository
-git clone https://github.com/B4PT0R/pypkg.git
-cd pypkg
+git clone https://github.com/B4PT0R/pkgmngr.git
+cd pkgmngr
 
 # Create a virtual environment
 python -m venv venv
@@ -410,7 +410,7 @@ pip install -e .[dev]
 ```bash
 pytest
 # Or with coverage
-pytest --cov=pypkg tests/
+pytest --cov=pkgmngr tests/
 ```
 
 ## Contributing

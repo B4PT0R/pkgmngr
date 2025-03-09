@@ -8,8 +8,8 @@ import json
 import requests
 from pathlib import Path
 
-from pypkg.common.errors import GitError, GithubError, try_operation, assert_condition
-from pypkg.common.cli import display_info, display_success, display_warning
+from pkgmngr.common.errors import GitError, GithubError, try_operation, assert_condition
+from pkgmngr.common.cli import display_info, display_success, display_warning
 
 
 def init_git_repo(directory, package_name, github_token=None, github_username=None, private=False):
@@ -42,7 +42,7 @@ def init_git_repo(directory, package_name, github_token=None, github_username=No
         elif github_username and not github_token:
             display_warning(f"No GitHub token provided. Skipping GitHub repository creation.")
             display_info(f"To create a GitHub repository later, set the GITHUB_TOKEN environment variable")
-            display_info(f"and run 'pypkg create init-repo' again.")
+            display_info(f"and run 'pkgmngr create init-repo' again.")
         else:
             display_info("Local Git repository initialized. No GitHub repository created.")
         

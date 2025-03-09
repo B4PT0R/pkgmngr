@@ -3,7 +3,7 @@ Tests for the common utilities module.
 """
 import os
 import pytest
-from pypkg.common.utils import (
+from pkgmngr.common.utils import (
     create_directory,
     create_file,
     sanitize_package_name,

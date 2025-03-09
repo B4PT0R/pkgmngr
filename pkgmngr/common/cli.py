@@ -1,5 +1,5 @@
 """
-Common CLI utilities for pypkg.
+Common CLI utilities for pkgmngr.
 """
 import os
 import sys

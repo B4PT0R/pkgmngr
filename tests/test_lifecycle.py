@@ -5,7 +5,7 @@ import os
 import pytest
 import toml
 from pathlib import Path
-from pypkg.create.lifecycle import (
+from pkgmngr.create.lifecycle import (
     rename_project,
     update_file_content
 )
@@ -64,7 +64,7 @@ def rename_test_project(temp_dir):
             "username": "testuser"
         }
     }
-    config_file = temp_dir / "pypkg.toml"
+    config_file = temp_dir / "pkgmngr.toml"
     with open(config_file, "w") as f:
         toml.dump(config, f)
     
@@ -78,14 +78,14 @@ def test_rename_project(rename_test_project, skip_github, monkeypatch):
     temp_dir = rename_test_project
     
     # Mock functions that interact with external systems
-    monkeypatch.setattr('pypkg.create.lifecycle.is_git_repository', lambda base_dir: True)
-    monkeypatch.setattr('pypkg.create.lifecycle.get_github_remote_info',
+    monkeypatch.setattr('pkgmngr.create.lifecycle.is_git_repository', lambda base_dir: True)
+    monkeypatch.setattr('pkgmngr.create.lifecycle.get_github_remote_info',
                        lambda base_dir: ("https://github.com/testuser/old-package.git", "testuser"))
     
     # Mock environmental variables
     if not skip_github:
         monkeypatch.setenv("GITHUB_TOKEN", "fake_token")
-        monkeypatch.setattr('pypkg.create.lifecycle.rename_github_repository',
+        monkeypatch.setattr('pkgmngr.create.lifecycle.rename_github_repository',
                            lambda username, old_name, new_name, token, remote_url, base_dir: True)
     
     # Run the rename function with our test directory
@@ -115,6 +115,6 @@ def test_rename_project(rename_test_project, skip_github, monkeypatch):
         assert 'pip install new-package' in readme_content
     
     # Check config file update
-    with open(temp_dir / "pypkg.toml", 'r') as f:
+    with open(temp_dir / "pkgmngr.toml", 'r') as f:
         config = toml.load(f)
         assert config["package_name"] == "new-package"

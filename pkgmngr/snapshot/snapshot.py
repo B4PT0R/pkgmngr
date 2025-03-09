@@ -7,8 +7,8 @@ from pathlib import Path
 import time
 import pathspec
 
-from pypkg.common.utils import is_binary_file
-from pypkg.common.errors import SnapshotError, try_operation, assert_condition
+from pkgmngr.common.utils import is_binary_file
+from pkgmngr.common.errors import SnapshotError, try_operation, assert_condition
 from .utils import get_file_language, get_file_icon, create_filename_anchor
 
 
@@ -158,9 +158,9 @@ def load_gitignore_patterns(start_path):
             # Process snapshot-specific patterns
             processed_lines = []
             for line in lines:
-                if line.startswith("#pypkg"):
-                    # Remove the #pypkg prefix to use it as a pattern
-                    processed_lines.append(line[len('#pypkg'):].strip())
+                if line.startswith("#pkgmngr"):
+                    # Remove the #pkgmngr prefix to use it as a pattern
+                    processed_lines.append(line[len('#pkgmngr'):].strip())
                 else:
                     processed_lines.append(line)
                     
@@ -176,7 +176,7 @@ def load_gitignore_patterns(start_path):
         try:
             with open(gitignore_path, 'r') as f:
                 lines = f.readlines()
-                processed_lines = [line[len('#pypkg'):].strip() if line.startswith("#pypkg") else line for line in lines]
+                processed_lines = [line[len('#pkgmngr'):].strip() if line.startswith("#pkgmngr") else line for line in lines]
                 spec = pathspec.PathSpec.from_lines('gitwildmatch', processed_lines)
                 return spec, gitignore_path
         except Exception as e2:
@@ -194,7 +194,7 @@ def create_default_gitignore(gitignore_path):
     Raises:
         SnapshotError: If file creation fails
     """
-    from pypkg.common.templates import get_gitignore_content
+    from pkgmngr.common.templates import get_gitignore_content
     
     try:
         with open(gitignore_path, 'w') as f:

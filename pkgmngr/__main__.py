@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 """
-Main entry point for pypkg CLI.
+Main entry point for pkgmngr CLI.
 """
 import os
 import sys
 import argparse
 from pathlib import Path
 
-from pypkg.common.errors import error_handler
-from pypkg.common.cli import display_info, display_error
+from pkgmngr.common.errors import error_handler
+from pkgmngr.common.cli import display_info, display_error
 
 
 def create_main_parser():
@@ -20,33 +20,33 @@ def create_main_parser():
     """
     # Create the top-level parser
     parser = argparse.ArgumentParser(
-        description="pypkg: Comprehensive Python package management utilities",
+        description="pkgmngr: Comprehensive Python package management utilities",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   # Create a new package
-  pypkg new my-package
+  pkgmngr new my-package
   
   # Generate package files in the current directory
-  pypkg create
+  pkgmngr create
   
   # Initialize Git and GitHub repositories
-  pypkg init-repo
+  pkgmngr init-repo
   
   # Create a snapshot of the current state
-  pypkg snapshot
+  pkgmngr snapshot
   
   # Restore from a snapshot
-  pypkg restore [snapshot_id]
+  pkgmngr restore [snapshot_id]
   
   # Rename a package (including GitHub repository)
-  pypkg rename old-package-name new-package-name
+  pkgmngr rename old-package-name new-package-name
   
   # Push changes to GitHub
-  pypkg push
+  pkgmngr push
   
   # Publish to PyPI
-  pypkg publish
+  pkgmngr publish
         """
     )
     
@@ -54,7 +54,7 @@ Examples:
     parser.add_argument(
         '-v', '--version',
         action='store_true',
-        help="Show pypkg version and exit"
+        help="Show pkgmngr version and exit"
     )
     
     # Create subparsers for commands
@@ -183,8 +183,8 @@ def handle_version_command():
     Returns:
         int: Exit code
     """
-    from pypkg import __version__
-    print(f"pypkg version {__version__}")
+    from pkgmngr import __version__
+    print(f"pkgmngr version {__version__}")
     return 0
 
 
@@ -205,19 +205,19 @@ def dispatch_command(args):
     
     # Execute commands
     if args.command == "new":
-        from pypkg.create.cli import create_package_config
+        from pkgmngr.create.cli import create_package_config
         return create_package_config(args.package_name)
     
     elif args.command == "create":
-        from pypkg.create.cli import create_from_config
+        from pkgmngr.create.cli import create_from_config
         return create_from_config()
     
     elif args.command == "init-repo":
-        from pypkg.create.cli import init_repository
+        from pkgmngr.create.cli import init_repository
         return init_repository()
             
     elif args.command == "rename":
-        from pypkg.create.lifecycle import rename_project
+        from pkgmngr.create.lifecycle import rename_project
         return rename_project(args.old_name, args.new_name, args.skip_github)
     
     elif args.command == "snapshot":
@@ -227,11 +227,11 @@ def dispatch_command(args):
         return handle_restore_command(args)
     
     elif args.command == "push":
-        from pypkg.create.lifecycle import dump_to_github
+        from pkgmngr.create.lifecycle import dump_to_github
         return dump_to_github()
     
     elif args.command == "publish":
-        from pypkg.create.lifecycle import upload_to_pypi
+        from pkgmngr.create.lifecycle import upload_to_pypi
         return upload_to_pypi(test=args.test)
     
     else:
@@ -249,8 +249,8 @@ def handle_snapshot_command(args):
     Returns:
         int: Exit code
     """
-    from pypkg.snapshot.utils import list_available_snapshots, display_snapshot_list
-    from pypkg.snapshot.cli import handle_snapshot_create
+    from pkgmngr.snapshot.utils import list_available_snapshots, display_snapshot_list
+    from pkgmngr.snapshot.cli import handle_snapshot_create
     
     # Special handling for --list option
     if args.list:
@@ -273,8 +273,8 @@ def handle_restore_command(args):
     Returns:
         int: Exit code
     """
-    from pypkg.snapshot.utils import get_snapshot_path, select_snapshot_interactive
-    from pypkg.snapshot.restore import restore_from_snapshot, selective_restore
+    from pkgmngr.snapshot.utils import get_snapshot_path, select_snapshot_interactive
+    from pkgmngr.snapshot.restore import restore_from_snapshot, selective_restore
     
     # Convert snapshot arg to a path if it's a number
     snapshot_file = None
@@ -315,7 +315,7 @@ def handle_selective_restore(snapshot_file, target_dir, args, create_backup):
     Returns:
         int: Exit code
     """
-    from pypkg.snapshot.restore import selective_restore
+    from pkgmngr.snapshot.restore import selective_restore
     
     try:
         backup_file = selective_restore(
@@ -347,7 +347,7 @@ def handle_standard_restore(snapshot_file, target_dir, mode, create_backup):
     Returns:
         int: Exit code
     """
-    from pypkg.snapshot.restore import restore_from_snapshot
+    from pkgmngr.snapshot.restore import restore_from_snapshot
     
     try:
         backup_file = restore_from_snapshot(

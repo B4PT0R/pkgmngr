@@ -1,5 +1,5 @@
 """
-pypkg - Comprehensive Python Package Utilities
+pkgmngr - Comprehensive Python Package Utilities
 
 A collection of tools for Python package creation, snapshotting, and lifecycle management.
 Includes functionality for:
@@ -11,4 +11,4 @@ Includes functionality for:
 __version__ = "0.1.0"
 
 # Import common utilities for easier access
-from pypkg.common.errors import PkgUtilsError, ConfigError, GitError, SnapshotError, RestoreError
+from pkgmngr.common.errors import PkgUtilsError, ConfigError, GitError, SnapshotError, RestoreError

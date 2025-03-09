@@ -8,8 +8,8 @@ import fnmatch
 from typing import Optional, Dict, Tuple, List, Set
 from pathlib import Path
 
-from pypkg.common.utils import create_file, create_directory
-from pypkg.common.errors import RestoreError, try_operation, assert_condition
+from pkgmngr.common.utils import create_file, create_directory
+from pkgmngr.common.errors import RestoreError, try_operation, assert_condition
 from .snapshot import create_snapshot, parse_snapshot_file
 
 
@@ -294,7 +294,7 @@ def print_restore_summary(files_restored, files_skipped, backup_file):
     
     if backup_file:
         print(f"\nNote: A backup was created at {backup_file}")
-        print(f"To undo this restoration, run: pypkg snapshot restore {backup_file}")
+        print(f"To undo this restoration, run: pkgmngr snapshot restore {backup_file}")
 
 
 def selective_restore(snapshot_file_path: str, target_dir: str,

@@ -1,5 +1,5 @@
 """
-Error handling utilities for pypkg.
+Error handling utilities for pkgmngr.
 """
 import sys
 import traceback
@@ -10,7 +10,7 @@ F = TypeVar('F', bound=Callable[..., Any])
 
 
 class PkgUtilsError(Exception):
-    """Base exception class for pypkg errors."""
+    """Base exception class for pkgmngr errors."""
     pass
 
 

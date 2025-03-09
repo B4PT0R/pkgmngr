@@ -1,5 +1,5 @@
 """
-Pytest configuration and shared fixtures for pypkg tests.
+Pytest configuration and shared fixtures for pkgmngr tests.
 """
 import os
 import shutil
@@ -61,9 +61,9 @@ def dummy_package_config():
 
 @pytest.fixture
 def mock_toml_file(temp_dir, dummy_package_config):
-    """Create a mock pypkg.toml file with test configuration."""
+    """Create a mock pkgmngr.toml file with test configuration."""
     import toml
-    config_path = temp_dir / "pypkg.toml"
+    config_path = temp_dir / "pkgmngr.toml"
     with open(config_path, "w") as f:
         toml.dump(dummy_package_config, f)
     return config_path

@@ -1,5 +1,5 @@
 """
-Configuration management for pypkg.
+Configuration management for pkgmngr.
 """
 import os
 import toml
@@ -9,7 +9,7 @@ from typing import Dict, Tuple, Any, Optional
 
 def find_config_file(start_dir: Optional[str] = None) -> Optional[str]:
     """
-    Find the nearest pypkg.toml file by traversing up the directory tree.
+    Find the nearest pkgmngr.toml file by traversing up the directory tree.
     
     Args:
         start_dir: Directory to start the search (default: current directory)
@@ -22,7 +22,7 @@ def find_config_file(start_dir: Optional[str] = None) -> Optional[str]:
     # Traverse up to find the config file
     max_depth = 10  # Prevent infinite loops
     for _ in range(max_depth):
-        config_path = current_dir / "pypkg.toml"
+        config_path = current_dir / "pkgmngr.toml"
         if config_path.exists():
             return str(config_path)
         
@@ -37,7 +37,7 @@ def find_config_file(start_dir: Optional[str] = None) -> Optional[str]:
 
 def load_config(base_dir: Optional[str] = None) -> Tuple[Dict[str, Any], str]:
     """
-    Load configuration from pypkg.toml file.
+    Load configuration from pkgmngr.toml file.
     
     Args:
         base_dir: Base directory to look for config (default: current directory)
@@ -49,13 +49,13 @@ def load_config(base_dir: Optional[str] = None) -> Tuple[Dict[str, Any], str]:
         FileNotFoundError: If config file not found
     """
     if base_dir:
-        config_path = os.path.join(base_dir, "pypkg.toml")
+        config_path = os.path.join(base_dir, "pkgmngr.toml")
         if not os.path.exists(config_path):
             raise FileNotFoundError(f"Config file not found: {config_path}")
     else:
         config_path = find_config_file()
         if not config_path:
-            raise FileNotFoundError("Config file pypkg.toml not found in current directory or parents")
+            raise FileNotFoundError("Config file pkgmngr.toml not found in current directory or parents")
     
     with open(config_path, "r", encoding="utf-8") as f:
         config = toml.load(f)
@@ -131,7 +131,7 @@ def create_default_config(package_name: str, output_dir: str) -> str:
         Path to the created config file
     """
     import datetime
-    from pypkg.create.github import get_github_username_from_git
+    from pkgmngr.create.github import get_github_username_from_git
     
     # Ensure directory exists
     os.makedirs(output_dir, exist_ok=True)
@@ -173,7 +173,7 @@ def create_default_config(package_name: str, output_dir: str) -> str:
     }
     
     # Create the config file
-    config_path = os.path.join(output_dir, "pypkg.toml")
+    config_path = os.path.join(output_dir, "pkgmngr.toml")
     save_config(config, config_path)
     
     return config_path

@@ -1,8 +1,8 @@
 """
-Common utilities module for pypkg.
+Common utilities module for pkgmngr.
 
 This module provides shared functionality used by different components
-of the pypkg package.
+of the pkgmngr package.
 """
 
 from .utils import create_directory, sanitize_package_name

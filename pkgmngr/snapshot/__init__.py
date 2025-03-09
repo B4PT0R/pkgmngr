@@ -1,5 +1,5 @@
 """
-Package snapshot module for pypkg.
+Package snapshot module for pkgmngr.
 
 This module provides functionality for creating and restoring snapshots
 of Python packages and directory structures.

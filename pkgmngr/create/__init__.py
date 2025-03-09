@@ -1,5 +1,5 @@
 """
-Package creation module for pypkg.
+Package creation module for pkgmngr.
 
 This module provides functionality for creating new Python packages with
 standard project structure and managing package lifecycle.

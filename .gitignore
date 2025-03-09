@@ -1,16 +1,16 @@
-# Default .gitignore created by pypkg
+# Default .gitignore created by pkgmngr
 # Includes common patterns for Python projects
 
-# pypkg snapshots output
+# pkgmngr snapshots output
 snapshots/
 
-# pypkg config file
-pypkg.toml
+# pkgmngr config file
+pkgmngr.toml
 
-# Example of pypkg specific exclusions
-# Git will ignore lines with a leading #pypkg comment, but pypkg will use them
-#pypkg my_secret_config.ini
-#pypkg temporary_work/
+# Example of pkgmngr specific exclusions
+# Git will ignore lines with a leading #pkgmngr comment, but pkgmngr will use them
+#pkgmngr my_secret_config.ini
+#pkgmngr temporary_work/
 
 # Python
 __pycache__/

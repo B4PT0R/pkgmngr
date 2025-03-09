@@ -1,11 +1,11 @@
 """
-Command-line interface for the snapshot module of pypkg.
+Command-line interface for the snapshot module of pkgmngr.
 """
 import os
 import sys
 
-from pypkg.common.errors import error_handler, SnapshotError
-from pypkg.common.cli import display_success, display_error, display_info
+from pkgmngr.common.errors import error_handler, SnapshotError
+from pkgmngr.common.cli import display_success, display_error, display_info
 from .snapshot import create_snapshot
 from .restore import restore_from_snapshot, selective_restore
 from .utils import list_available_snapshots, display_snapshot_list, get_snapshot_path, select_snapshot_interactive

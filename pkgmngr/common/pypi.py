@@ -2,8 +2,8 @@
 Functions to check package name availability on PyPI.
 """
 import requests
-from pypkg.common.cli import display_warning, display_info, display_success
-from pypkg.common.errors import try_operation
+from pkgmngr.common.cli import display_warning, display_info, display_success
+from pkgmngr.common.errors import try_operation
 
 def is_name_available_on_pypi(package_name):
     """

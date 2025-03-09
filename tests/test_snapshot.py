@@ -5,14 +5,14 @@ import os
 import re
 import pytest
 from pathlib import Path
-from pypkg.snapshot.snapshot import (
+from pkgmngr.snapshot.snapshot import (
     create_snapshot,
     parse_snapshot_file,
     get_file_tree,
     should_ignore,
     load_gitignore_patterns
 )
-from pypkg.snapshot.restore import (
+from pkgmngr.snapshot.restore import (
     restore_from_snapshot,
     selective_restore
 )
@@ -149,7 +149,7 @@ Additional tests for the refactored snapshot and restore functionality.
 import os
 import pytest
 from pathlib import Path
-from pypkg.snapshot.restore import (
+from pkgmngr.snapshot.restore import (
     is_backup_snapshot,
     filter_files_by_patterns,
     restore_files,
@@ -287,17 +287,17 @@ def test_selective_restore(temp_dir, monkeypatch):
         return file_contents, "Test snapshot"
     
     monkeypatch.setattr(
-        "pypkg.snapshot.restore.parse_snapshot_file", 
+        "pkgmngr.snapshot.restore.parse_snapshot_file", 
         mock_parse_snapshot_file
     )
     
     # Mock other functions to avoid creating actual backups
     monkeypatch.setattr(
-        "pypkg.snapshot.restore.is_backup_snapshot",
+        "pkgmngr.snapshot.restore.is_backup_snapshot",
         lambda path: False
     )
     monkeypatch.setattr(
-        "pypkg.snapshot.restore.create_backup_snapshot",
+        "pkgmngr.snapshot.restore.create_backup_snapshot",
         lambda *args, **kwargs: str(temp_dir / "mock_backup.md")
     )
     
@@ -324,7 +324,7 @@ def test_selective_restore(temp_dir, monkeypatch):
         return {"file2.txt": "content2"}
     
     monkeypatch.setattr(
-        "pypkg.snapshot.restore.select_files_interactive",
+        "pkgmngr.snapshot.restore.select_files_interactive",
         mock_select_interactive
     )
     

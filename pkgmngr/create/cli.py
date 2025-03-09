@@ -1,13 +1,13 @@
 """
-Command-line interface for the create module of pypkg.
+Command-line interface for the create module of pkgmngr.
 """
 import os
 import sys
 from pathlib import Path
 
-from pypkg.common.config import load_config, create_default_config, get_github_info
-from pypkg.common.cli import confirm_action, display_success, display_error, display_info, display_warning
-from pypkg.common.errors import error_handler, ConfigError, GitError
+from pkgmngr.common.config import load_config, create_default_config, get_github_info
+from pkgmngr.common.cli import confirm_action, display_success, display_error, display_info, display_warning
+from pkgmngr.common.errors import error_handler, ConfigError, GitError
 from .core import create_package_structure
 from .github import init_git_repo
 
@@ -24,7 +24,7 @@ def create_package_config(package_name):
         int: Exit code
     """
     # Check PyPI availability
-    from pypkg.common.pypi import check_name_availability
+    from pkgmngr.common.pypi import check_name_availability
     
     if not check_name_availability(package_name, context="create"):
         display_info("Operation cancelled.")
@@ -80,8 +80,8 @@ def display_success_message(package_name, config_path):
     print("\nTo finish creating your package:")
     print(f"- Change to the project's directory: `cd {package_name}`")
     print(f"- Review and edit the config file in your favorite editor: e.g. `nano {config_path}`")
-    print("- Then run `pypkg create` to generate the project files.")
-    print("Optionally you may want to initialize a Git repository synced with Github: `pypkg init-repo`")
+    print("- Then run `pkgmngr create` to generate the project files.")
+    print("Optionally you may want to initialize a Git repository synced with Github: `pkgmngr init-repo`")
     print("(Using the Github API requires that you expose a valid GITHUB_TOKEN with repo scope as environment variable)")
     print("\nHappy coding!")
 
@@ -113,7 +113,7 @@ def create_from_config(base_dir=None):
 
 def load_and_validate_config(base_dir):
     """
-    Load and validate the configuration from pypkg.toml.
+    Load and validate the configuration from pkgmngr.toml.
     
     Args:
         base_dir: Base directory to look for config
@@ -127,7 +127,7 @@ def load_and_validate_config(base_dir):
     try:
         config, config_path = load_config(base_dir)
     except FileNotFoundError:
-        raise ConfigError("Config file not found. Run 'pypkg new PACKAGE_NAME' first or change to the package directory.")
+        raise ConfigError("Config file not found. Run 'pkgmngr new PACKAGE_NAME' first or change to the package directory.")
     
     package_name = config.get("package_name")
     if not package_name:

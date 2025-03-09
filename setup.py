@@ -4,14 +4,14 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name="pypkg",
+    name="pkgmngr",
     version="0.1.0",
     author="Baptiste FERRAND",
     author_email="bferrand.maths@gmail.com",
     description="Comprehensive Python package utilities for creation, snapshotting, and lifecycle management",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/B4PT0R/pypkg",
+    url="https://github.com/B4PT0R/pkgmngr",
     packages=find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -49,16 +49,16 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'pypkg=pypkg.__main__:main',
+            'pkgmngr=pkgmngr.__main__:main',
         ],
     },
     keywords="package, utilities, snapshot, backup, restore, versioning, creation, github, lifecycle, documentation, python-package",
     project_urls={
-        "Bug Reports": "https://github.com/B4PT0R/pypkg/issues",
-        "Source": "https://github.com/B4PT0R/pypkg",
-        "Documentation": "https://github.com/B4PT0R/pypkg#readme",
+        "Bug Reports": "https://github.com/B4PT0R/pkgmngr/issues",
+        "Source": "https://github.com/B4PT0R/pkgmngr",
+        "Documentation": "https://github.com/B4PT0R/pkgmngr#readme",
     },
     package_data={
-        "pypkg": ["templates/*.tpl", "*.md"],
+        "pkgmngr": ["templates/*.tpl", "*.md"],
     },
 )

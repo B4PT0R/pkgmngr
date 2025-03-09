@@ -6,7 +6,7 @@ import pytest
 import json
 import requests
 from unittest.mock import patch, MagicMock
-from pypkg.create.github import (
+from pkgmngr.create.github import (
     init_git_repo,
     create_github_repo,
     get_github_username_from_git

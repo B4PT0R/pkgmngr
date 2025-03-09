@@ -14,10 +14,10 @@ from pathlib import Path
 from contextlib import contextmanager
 from distutils.spawn import find_executable
 
-from pypkg.common.utils import sanitize_package_name
-from pypkg.common.errors import PackageError, GitError, GithubError, ConfigError, error_handler, try_operation
-from pypkg.common.cli import display_info, display_success, display_warning, display_error, get_input_with_default
-from pypkg.common.config import load_config, save_config, get_github_info
+from pkgmngr.common.utils import sanitize_package_name
+from pkgmngr.common.errors import PackageError, GitError, GithubError, ConfigError, error_handler, try_operation
+from pkgmngr.common.cli import display_info, display_success, display_warning, display_error, get_input_with_default
+from pkgmngr.common.config import load_config, save_config, get_github_info
 
 
 @contextmanager
@@ -58,7 +58,7 @@ def rename_project(old_name, new_name, skip_github=False, base_dir=None):
         int: 0 if successful, 1 otherwise
     """
     # Check PyPI availability for the new name
-    from pypkg.common.pypi import check_name_availability
+    from pkgmngr.common.pypi import check_name_availability
     
     if not check_name_availability(new_name, context="rename"):
         display_info("Rename operation cancelled.")
@@ -261,7 +261,7 @@ def validate_rename_parameters(old_name, base_dir):
     try:
         config, config_path = load_config(base_dir)
     except FileNotFoundError:
-        raise ConfigError("Config file not found in current directory. Run 'pypkg new PACKAGE_NAME' first or change to the package directory.")
+        raise ConfigError("Config file not found in current directory. Run 'pkgmngr new PACKAGE_NAME' first or change to the package directory.")
         
     current_name = config.get("package_name")
     if current_name != old_name:
@@ -444,7 +444,7 @@ def handle_github_rename(github_info, old_name, new_name, base_dir, skip_github)
         display_warning("GITHUB_TOKEN environment variable not set. Skipping GitHub repository renaming.")
         display_info("Local project renamed successfully, but GitHub repository remains unchanged.")
         display_info("To rename the GitHub repository, set the GITHUB_TOKEN environment variable and run:")
-        display_info(f"  pypkg rename {new_name} {new_name}")
+        display_info(f"  pkgmngr rename {new_name} {new_name}")
 
 
 def is_git_repository(base_dir=None):
@@ -647,7 +647,7 @@ def dump_to_github(base_dir=None):
     
     # Check if inside a Git repository
     if not is_git_repository(base_dir):
-        raise GitError("Not inside a Git repository. Run 'pypkg create init-repo' first to initialize Git")
+        raise GitError("Not inside a Git repository. Run 'pkgmngr create init-repo' first to initialize Git")
     
     # Ask for commit message
     display_info("Enter a commit message:")

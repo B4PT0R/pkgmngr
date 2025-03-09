@@ -4,7 +4,7 @@ Core functionality for creating Python package structures.
 import os
 from pathlib import Path
 
-from pypkg.common.templates import (
+from pkgmngr.common.templates import (
     INIT_PY_TEMPLATE,
     MAIN_PY_TEMPLATE,
     LICENSE_MIT,
@@ -16,8 +16,8 @@ from pypkg.common.templates import (
     SETUP_PY_TEMPLATE,
     MANIFEST_IN_TEMPLATE
 )
-from pypkg.common.utils import create_file, create_directory, sanitize_package_name
-from pypkg.common.errors import PackageError, try_operation, assert_condition
+from pkgmngr.common.utils import create_file, create_directory, sanitize_package_name
+from pkgmngr.common.errors import PackageError, try_operation, assert_condition
 
 
 def create_package_structure(package_name, author="Your Name", year="2025", github_username=None):

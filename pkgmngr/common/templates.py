@@ -1,22 +1,22 @@
 """
-Shared templates used across pypkg modules.
+Shared templates used across pkgmngr modules.
 """
 
 # Default gitignore template shared between snapshot and create modules
 DEFAULT_GITIGNORE_TEMPLATE = [
-    "# Default .gitignore created by pypkg",
+    "# Default .gitignore created by pkgmngr",
     "# Includes common patterns for Python projects",
     "",
-    "# pypkg config file",
-    "pypkg.toml",
+    "# pkgmngr config file",
+    "pkgmngr.toml",
     "",
-    "# pypkg snapshots",
+    "# pkgmngr snapshots",
     "snapshots/",
     "",
-    "# Example of pypkg-specific exclusions",
-    "# Git will ignore lines with a leading #pypkg comment, but snapshot will use them",
-    "#pypkg my_secret_config.ini",
-    "#pypkg temporary_work/",
+    "# Example of pkgmngr-specific exclusions",
+    "# Git will ignore lines with a leading #pkgmngr comment, but snapshot will use them",
+    "#pkgmngr my_secret_config.ini",
+    "#pkgmngr temporary_work/",
     "",
     "# Python",
     "__pycache__/",

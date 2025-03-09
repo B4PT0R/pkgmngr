@@ -1,3 +1,3 @@
 """
-Test package for pypkg.
+Test package for pkgmngr.
 """

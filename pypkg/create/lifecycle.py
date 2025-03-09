@@ -622,6 +622,29 @@ def upload_to_pypi(test=False, base_dir=None):
         
         return 0
 
+def find_python_executable():
+    """
+    Find the appropriate Python executable.
+    Tries python, python3, and sys.executable in that order.
+    
+    Returns:
+        str: Path to the Python executable
+    
+    Raises:
+        PackageError: If no Python executable can be found
+    """
+    # First, try the current Python executable (from sys.executable)
+    # This is most likely to be the correct one, especially in a virtual environment
+    if sys.executable and os.path.exists(sys.executable):
+        return sys.executable
+    
+    # Try common Python executable names
+    for executable in ["python", "python3"]:
+        if find_executable(executable):
+            return executable
+    
+    # If we get here, we couldn't find a Python executable
+    raise PackageError("No Python executable found. Please make sure Python is in your PATH.")
 
 def verify_required_tools():
     """
@@ -630,9 +653,33 @@ def verify_required_tools():
     Raises:
         PackageError: If required tools are missing
     """
-    for tool in ["python", "pip", "twine"]:
-        if not find_executable(tool):
-            raise PackageError(f"{tool} not found in PATH. Please install {tool} and try again")
+    # Check for Python executable
+    try:
+        python_exe = find_python_executable()
+    except PackageError as e:
+        raise e
+    
+    # Check for pip and twine as modules rather than executables
+    # Since we'll use them with the Python executable we found
+    try:
+        subprocess.run(
+            [python_exe, "-m", "pip", "--version"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+    except subprocess.CalledProcessError:
+        raise PackageError("pip module not found. Please install pip and try again")
+    
+    try:
+        subprocess.run(
+            [python_exe, "-m", "twine", "--version"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+    except subprocess.CalledProcessError:
+        raise PackageError("twine module not found. Please install twine using 'pip install twine' and try again")
 
 
 def clean_build_artifacts():
@@ -660,15 +707,16 @@ def build_package():
         PackageError: If building the package fails
     """
     display_info("Building package...")
+    python_exe = find_python_executable()
     
     try_operation(
-        lambda: subprocess.run([sys.executable, "-m", "pip", "install", "--upgrade", "build"], check=True),
+        lambda: subprocess.run([python_exe, "-m", "pip", "install", "--upgrade", "build"], check=True),
         "Failed to install build package",
         PackageError
     )
     
     try_operation(
-        lambda: subprocess.run([sys.executable, "-m", "build"], check=True),
+        lambda: subprocess.run([python_exe, "-m", "build"], check=True),
         "Failed to build package",
         PackageError
     )
@@ -704,9 +752,11 @@ def upload_to_test_pypi(base_dir):
         PackageError: If uploading fails
     """
     display_info("Uploading to TestPyPI...")
+    python_exe = find_python_executable()
+    
     try_operation(
         lambda: subprocess.run([
-            "twine", "upload", "--repository-url", "https://test.pypi.org/legacy/", "dist/*"
+            python_exe, "-m", "twine", "upload", "--repository-url", "https://test.pypi.org/legacy/", "dist/*"
         ], check=True),
         "Failed to upload to TestPyPI",
         PackageError
@@ -729,8 +779,10 @@ def upload_to_real_pypi():
         PackageError: If uploading fails
     """
     display_info("Uploading to PyPI...")
+    python_exe = find_python_executable()
+    
     try_operation(
-        lambda: subprocess.run(["twine", "upload", "dist/*"], check=True),
+        lambda: subprocess.run([python_exe, "-m", "twine", "upload", "dist/*"], check=True),
         "Failed to upload to PyPI",
         PackageError
     )

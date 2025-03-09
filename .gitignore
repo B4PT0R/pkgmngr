@@ -1,0 +1,79 @@
+# Default .gitignore created by pypkg
+# Includes common patterns for Python projects
+
+# pypkg snapshots output
+snapshots/
+
+# pypkg config file
+pypkg.toml
+
+# Example of pypkg specific exclusions
+# Git will ignore lines with a leading #pypkg comment, but pypkg will use them
+#pypkg my_secret_config.ini
+#pypkg temporary_work/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.benchmarks/
+.coverage
+htmlcov/
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+ENV/
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Build and distribution
+dist/
+build/
+
+# Version control
+.git/
+.hg/
+.svn/
+.bzr/
+
+# Frontend specific
+node_modules/
+bower_components/
+package-lock.json
+yarn.lock
+npm-debug.log
+yarn-error.log
+
+# Data and logs
+logs/
+*.log
+*.csv
+*.sqlite
+*.db

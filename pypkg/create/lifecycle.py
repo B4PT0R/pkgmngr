@@ -57,6 +57,13 @@ def rename_project(old_name, new_name, skip_github=False, base_dir=None):
     Returns:
         int: 0 if successful, 1 otherwise
     """
+    # Check PyPI availability for the new name
+    from pypkg.common.pypi import check_name_availability
+    
+    if not check_name_availability(new_name, context="rename"):
+        display_info("Rename operation cancelled.")
+        return 0
+    
     # Use provided base directory or current directory
     base_dir = base_dir or os.getcwd()
     

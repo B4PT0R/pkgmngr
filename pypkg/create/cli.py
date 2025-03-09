@@ -23,6 +23,13 @@ def create_package_config(package_name):
     Returns:
         int: Exit code
     """
+    # Check PyPI availability
+    from pypkg.common.pypi import check_name_availability
+    
+    if not check_name_availability(package_name, context="create"):
+        display_info("Operation cancelled.")
+        return 0
+    
     # Create root directory
     root_dir = Path(package_name)
     

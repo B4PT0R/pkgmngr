@@ -1,22 +1,65 @@
 """
 Tests for the snapshot functionality.
 """
+import pytest
+from unittest.mock import patch, MagicMock
+from pathlib import Path
 import os
 import re
-import pytest
-from pathlib import Path
+
 from pkgmngr.snapshot.snapshot import (
     create_snapshot,
     parse_snapshot_file,
     get_file_tree,
-    should_ignore,
-    load_gitignore_patterns
+    extract_project_name_from_snapshot,
+    get_package_name_for_snapshot
 )
 from pkgmngr.snapshot.restore import (
     restore_from_snapshot,
-    selective_restore
+    display_snapshot_metadata,
+    create_backup_snapshot
 )
 
+
+
+def test_get_package_name_for_snapshot(temp_dir, monkeypatch):
+    """Test retrieving package name for snapshot."""
+    # Test with config file
+    config_content = {
+        "package_name": "test-config-package"
+    }
+    
+    # Mock the load_config function
+    def mock_load_config(path):
+        return config_content, "dummy_path"
+    
+    monkeypatch.setattr("pkgmngr.common.config.load_config", mock_load_config)
+    
+    # Should get name from config
+    name = get_package_name_for_snapshot(temp_dir)
+    assert name == "test-config-package"
+    
+    # Test with failed config loading
+    def mock_load_config_fail(path):
+        raise Exception("Config not found")
+    
+    monkeypatch.setattr("pkgmngr.common.config.load_config", mock_load_config_fail)
+    
+    # Should fall back to directory name
+    name = get_package_name_for_snapshot(temp_dir)
+    assert name == os.path.basename(temp_dir)
+
+def test_extract_project_name_from_snapshot():
+    """Test extracting project name from snapshot header."""
+    # New format
+    content = "# test-project - Package Snapshot - Generated on 2025-01-01_12-00-00\n\n## Comments"
+    name = extract_project_name_from_snapshot(content)
+    assert name == "test-project"
+    
+    # Old format
+    content = "# Package Snapshot - Generated on 2025-01-01_12-00-00\n\n## Comments"
+    name = extract_project_name_from_snapshot(content)
+    assert name is None
 
 @pytest.fixture
 def sample_project(temp_dir):
@@ -60,30 +103,161 @@ def test_create_snapshot(sample_project, monkeypatch):
     
     # Check content
     content = expected_file.read_text()
-    assert "# Package Snapshot - Generated on 2025-01-01_12-00-00" in content
+    assert "- Package Snapshot - Generated on 2025-01-01_12-00-00" in content
     assert "## Comments\nTest snapshot" in content
     assert "## Directory Structure" in content
     assert "## Table of Contents" in content
     assert "## Files" in content
 
-
-def test_parse_snapshot_file(sample_project, monkeypatch):
-    """Test parsing a snapshot file."""
-    # Create a snapshot first
+def test_create_snapshot_header(sample_project, monkeypatch):
+    """Test that create_snapshot includes the project name and note in the header."""
+    # Mock time.strftime to return a fixed timestamp
     monkeypatch.setattr('time.strftime', lambda *args, **kwargs: "2025-01-01_12-00-00")
-    snapshot_file = create_snapshot(sample_project, "snapshots", comment="Test snapshot")
     
-    # Parse it
-    file_contents, comment = parse_snapshot_file(snapshot_file)
+    # Mock get_package_name_for_snapshot to return a known value
+    monkeypatch.setattr(
+        'pkgmngr.snapshot.snapshot.get_package_name_for_snapshot', 
+        lambda path: "test-project"
+    )
     
-    # Verify parsed contents
-    assert comment == "Test snapshot"
+    # Create snapshot
+    output_file = create_snapshot(sample_project, "snapshots", comment="Test snapshot")
+    
+    # Check content
+    snapshot_path = Path(output_file)
+    assert snapshot_path.exists()
+    
+    with open(snapshot_path, 'r') as f:
+        content = f.read()
+    
+    # Verify the header includes the project name
+    assert content.startswith("# test-project - Package Snapshot - Generated on")
+    
+    # Verify the note about triple primes is included
+    assert "**Note:** All triple prime characters (′′′) within file content blocks should be interpreted as triple backticks." in content
+    assert "This convention prevents formatting issues in the snapshot markdown." in content
+
+def test_parse_snapshot_file(temp_dir):
+    """Test parsing a snapshot file with the new header format."""
+    # Create a test snapshot file with new format
+    snapshot_file = temp_dir / "test_snapshot.md"
+    with open(snapshot_file, "w") as f:
+        f.write("""# test-project - Package Snapshot - Generated on 2025-01-01_12-00-00
+
+## Comments
+Test snapshot comment
+
+## Directory Structure
+```
+📦 test_project
+├─ 📂 test_pkg
+│  ├─ 🐍 __init__.py
+│  └─ 🐍 __main__.py
+├─ 📝 README.md
+└─ 📋 .gitignore
+```
+
+## Table of Contents
+1. [test_pkg/__init__.py](#test_pkg-__init__py)
+2. [test_pkg/__main__.py](#test_pkg-__main__py)
+3. [README.md](#readmemd)
+4. [.gitignore](#gitignore)
+
+## Files
+
+<a id="test_pkg-__init__py"></a>
+### test_pkg/__init__.py
+```python
+\"\"\"Test package.\"\"\"
+
+__version__ = "0.1.0"
+```
+
+<a id="test_pkg-__main__py"></a>
+### test_pkg/__main__.py
+```python
+\"\"\"Main module.\"\"\"
+
+print("Hello from test_pkg!")
+```
+
+<a id="readmemd"></a>
+### README.md
+```markdown
+# Test Package
+
+A test package for snapshot testing.
+```
+
+<a id="gitignore"></a>
+### .gitignore
+```
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Snapshots
+snapshots/
+```
+""")
+    
+    # Test parsing
+    file_contents, comment, project_name = parse_snapshot_file(str(snapshot_file))
+    
+    # Verify results
+    assert comment == "Test snapshot comment"
+    assert project_name == "test-project"
     assert "test_pkg/__init__.py" in file_contents
-    assert "test_pkg/__main__.py" in file_contents
-    assert "README.md" in file_contents
+    assert "__version__ = \"0.1.0\"" in file_contents["test_pkg/__init__.py"]
+
+def test_create_snapshot_includes_project_name(sample_project, monkeypatch):
+    """Test that create_snapshot includes the project name in the header."""
+    # Mock time.strftime to return a fixed timestamp
+    monkeypatch.setattr('time.strftime', lambda *args, **kwargs: "2025-01-01_12-00-00")
     
-    # Check content of a specific file
-    assert '__version__ = "0.1.0"' in file_contents["test_pkg/__init__.py"]
+    # Mock get_package_name_for_snapshot to return a known value
+    monkeypatch.setattr(
+        'pkgmngr.snapshot.snapshot.get_package_name_for_snapshot', 
+        lambda path: "test-project"
+    )
+    
+    # Create snapshot
+    output_file = create_snapshot(sample_project, "snapshots", comment="Test snapshot")
+    
+    # Check content
+    snapshot_path = Path(output_file)
+    assert snapshot_path.exists()
+    
+    with open(snapshot_path, 'r') as f:
+        content = f.read()
+    
+    # Verify the header includes the project name
+    assert content.startswith("# test-project - Package Snapshot - Generated on")
+
+def test_display_snapshot_metadata(capsys):
+    """Test that the snapshot metadata display function works correctly."""
+    # Test with both project name and comment
+    display_snapshot_metadata("Test comment", "test-project")
+    captured = capsys.readouterr()
+    assert "Restoring snapshot of project: test-project" in captured.out
+    assert "Test comment" in captured.out
+    
+    # Test with only comment
+    display_snapshot_metadata("Only comment", None)
+    captured = capsys.readouterr()
+    assert "Restoring snapshot of project" not in captured.out
+    assert "Only comment" in captured.out
+    
+    # Test with only project name
+    display_snapshot_metadata(None, "only-project")
+    captured = capsys.readouterr()
+    assert "Restoring snapshot of project: only-project" in captured.out
+    assert "Snapshot comment" not in captured.out
+    
+    # Test with neither
+    display_snapshot_metadata(None, None)
+    captured = capsys.readouterr()
+    assert captured.out.strip() == ""
 
 
 def test_restore_from_snapshot(sample_project, temp_dir, monkeypatch):
@@ -114,6 +288,85 @@ def test_restore_from_snapshot(sample_project, temp_dir, monkeypatch):
     with open(restore_dir / "test_pkg" / "__init__.py", 'r') as f:
         content = f.read()
         assert '__version__ = "0.1.0"' in content
+
+def test_backtick_handling(temp_dir):
+    """Test that backticks in file content are properly handled."""
+    # Create a test file with triple backticks inside
+    test_file = temp_dir / "test_file.md"
+    with open(test_file, "w") as f:
+        f.write("""# Test File
+
+Here's a code example:
+
+```python
+def test_function():
+    print("Hello world")
+```
+
+And another one:
+
+```javascript
+console.log("Hello world");
+```
+""")
+    
+    # Create a mock file list
+    file_paths = ["test_file.md"]
+    
+    # Call the collect_file_contents function
+    from pkgmngr.snapshot.snapshot import collect_file_contents
+    content_lines = collect_file_contents(temp_dir, file_paths)
+    
+    # Join the lines to check the result
+    content = "\n".join(content_lines)
+    
+    # Verify the backticks were handled correctly
+    assert "```markdown" in content  # Outer code block uses regular backticks
+    assert "′′′python" in content   # Inner code blocks use primes
+    assert "′′′javascript" in content
+    
+    # Extract the file content
+    from pkgmngr.snapshot.snapshot import extract_file_contents_from_snapshot
+    file_contents = extract_file_contents_from_snapshot(content)
+    
+    # Verify extraction works correctly and backticks are restored
+    assert "test_file.md" in file_contents
+    assert "```python" in file_contents["test_file.md"]  # Primes converted back to backticks
+    assert "```javascript" in file_contents["test_file.md"]
+
+@pytest.mark.parametrize("has_project_name", [True, False])
+def test_restore_from_snapshot_with_project_name(sample_project, temp_dir, monkeypatch, has_project_name):
+    """Test restoring a snapshot with or without project name in the header."""
+    # Create a directory to restore to
+    restore_dir = temp_dir / "restore_test"
+    restore_dir.mkdir()
+    
+    # Mock parse_snapshot_file to return controlled results
+    def mock_parse_snapshot_file(path):
+        file_contents = {
+            "test_file.py": "print('test')"
+        }
+        project_name = "test-project" if has_project_name else None
+        return file_contents, "Test comment", project_name
+    
+    monkeypatch.setattr("pkgmngr.snapshot.restore.parse_snapshot_file", mock_parse_snapshot_file)
+    
+    # Mock other functions to isolate the test
+    monkeypatch.setattr("pkgmngr.snapshot.restore.validate_restore_parameters", lambda *args: None)
+    monkeypatch.setattr("pkgmngr.snapshot.restore.is_backup_snapshot", lambda path: False)
+    monkeypatch.setattr("pkgmngr.snapshot.restore.create_backup_if_needed", lambda *args: None)
+    monkeypatch.setattr("pkgmngr.snapshot.restore.restore_files", lambda *args: (1, 0))
+    monkeypatch.setattr("pkgmngr.snapshot.restore.print_restore_summary", lambda *args: None)
+    
+    # Mock display_snapshot_metadata to check it's called with correct args
+    display_mock = MagicMock()
+    monkeypatch.setattr("pkgmngr.snapshot.restore.display_snapshot_metadata", display_mock)
+    
+    # Run the restore
+    restore_from_snapshot("dummy_path", str(restore_dir))
+    
+    # Verify display_snapshot_metadata was called with correct arguments
+    display_mock.assert_called_once_with("Test comment", "test-project" if has_project_name else None)
 
 
 def test_selective_restore(sample_project, temp_dir, monkeypatch):
@@ -159,23 +412,49 @@ from pkgmngr.snapshot.restore import (
 
 def test_is_backup_snapshot(temp_dir):
     """Test detecting backup snapshot files."""
-    # Create a regular snapshot file
+    # Create a regular snapshot file with the new format
     regular_snapshot = temp_dir / "regular_snapshot.md"
-    regular_snapshot.write_text("# Package Snapshot - Generated on 2025-01-01\n\n## Comments\nRegular snapshot comment\n")
+    regular_snapshot.write_text("# test-project - Package Snapshot - Generated on 2025-01-01\n\n## Comments\nRegular snapshot comment\n")
     
     # Create a backup snapshot file (by filename)
     backup_by_name = temp_dir / "pre_restore_backup_2025-01-01.md"
-    backup_by_name.write_text("# Package Snapshot - Generated on 2025-01-01\n\n## Comments\nSome comment\n")
+    backup_by_name.write_text("# test-project - Package Snapshot - Generated on 2025-01-01\n\n## Comments\nSome comment\n")
     
     # Create a backup snapshot file (by content)
     backup_by_content = temp_dir / "snapshot_with_backup_comment.md"
-    backup_by_content.write_text("# Package Snapshot - Generated on 2025-01-01\n\n## Comments\nAutomatic backup created before restoration\n")
+    backup_by_content.write_text("# test-project - Package Snapshot - Generated on 2025-01-01\n\n## Comments\nAutomatic backup created before restoration\n")
     
     # Test detection
     assert not is_backup_snapshot(str(regular_snapshot))
     assert is_backup_snapshot(str(backup_by_name))
     assert is_backup_snapshot(str(backup_by_content))
 
+
+def test_create_backup_snapshot(temp_dir, monkeypatch):
+    """Test creating a backup snapshot."""
+    # Mock create_snapshot to return a known path
+    snapshot_path = temp_dir / "snapshots" / "snapshot_2025-01-01_12-00-00.md"
+    
+    def mock_create_snapshot(path, output_folder, output_file, comment):
+        os.makedirs(os.path.join(path, output_folder), exist_ok=True)
+        with open(snapshot_path, "w") as f:
+            f.write(f"# test-project - Package Snapshot - Generated on 2025-01-01_12-00-00\n\n## Comments\n{comment}\n")
+        return str(snapshot_path)
+    
+    monkeypatch.setattr("pkgmngr.snapshot.restore.create_snapshot", mock_create_snapshot)
+    monkeypatch.setattr("time.strftime", lambda *args, **kwargs: "2025-01-01_12-00-00")
+    
+    # Create the backup
+    backup_file = create_backup_snapshot(str(temp_dir))
+    
+    # Check the backup was created with correct naming
+    assert "pre_restore_backup_2025-01-01_12-00-00.md" in backup_file
+    
+    # Verify the content includes the automatic backup comment
+    with open(backup_file, "r") as f:
+        content = f.read()
+    assert "Automatic backup created before restoration" in content
+    assert "# test-project - Package Snapshot" in content
 
 # Updated test that correctly expects behavior of dir/* to match all files under dir/
 def test_filter_files_by_patterns():
@@ -284,7 +563,7 @@ def test_selective_restore(temp_dir, monkeypatch):
             "dir/file3.py": "content3",
             "dir/file4.txt": "content4"
         }
-        return file_contents, "Test snapshot"
+        return file_contents, "Test snapshot", "test-project"
     
     monkeypatch.setattr(
         "pkgmngr.snapshot.restore.parse_snapshot_file", 

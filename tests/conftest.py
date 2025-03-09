@@ -165,20 +165,24 @@ def sample_snapshot_file(temp_dir):
     
     snapshot_file = snapshot_dir / "snapshot_2025-01-01_12-00-00.md"
     with open(snapshot_file, "w") as f:
-        f.write("""# Package Snapshot - Generated on 2025-01-01_12-00-00
+        f.write("""# test-project - Package Snapshot - Generated on 2025-01-01_12-00-00
+
+**Note:** All triple prime characters (′′′) within file content blocks should be interpreted as triple backticks.
+This convention prevents formatting issues in the snapshot markdown.
+(Don't forget to replace them when you copy/paste from the snapshot.)
 
 ## Comments
 Test snapshot comment
 
 ## Directory Structure
-′′′
+```
 📦 test_project
 ├─ 📂 test_pkg
 │  ├─ 🐍 __init__.py
 │  └─ 🐍 __main__.py
 ├─ 📝 README.md
 └─ 📋 .gitignore
-′′′
+```
 
 ## Table of Contents
 1. [test_pkg/__init__.py](#test_pkg-__init__py)
@@ -190,38 +194,38 @@ Test snapshot comment
 
 <a id="test_pkg-__init__py"></a>
 ### test_pkg/__init__.py
-′′′python
+```python
 \"\"\"Test package.\"\"\"
 
 __version__ = "0.1.0"
-′′′
+```
 
 <a id="test_pkg-__main__py"></a>
 ### test_pkg/__main__.py
-′′′python
+```python
 \"\"\"Main module.\"\"\"
 
 print("Hello from test_pkg!")
-′′′
+```
 
 <a id="readmemd"></a>
 ### README.md
-′′′markdown
+```markdown
 # Test Package
 
 A test package for snapshot testing.
-′′′
+```
 
 <a id="gitignore"></a>
 ### .gitignore
-′′′
+```
 __pycache__/
 *.py[cod]
 *$py.class
 
 # Snapshots
 snapshots/
-′′′
+```
 """)
     
     return snapshot_file
@@ -256,5 +260,76 @@ setup(
     description="A test package",
 )
 ''')
+    
+    return temp_dir
+
+
+@pytest.fixture
+def rename_test_project(temp_dir):
+    """Create a test project structure for renaming tests."""
+    # Create a simple package structure
+    pkg_dir = temp_dir / "old_package"
+    pkg_dir.mkdir()
+    
+    # Create Python files
+    init_py = pkg_dir / "__init__.py"
+    init_py.write_text('"""old-package."""\n__version__ = "0.1.0"')
+    
+    main_py = pkg_dir / "__main__.py"
+    main_py.write_text('"""Main module for old-package."""')
+    
+    # Create tests directory
+    tests_dir = temp_dir / "tests"
+    tests_dir.mkdir()
+    test_py = tests_dir / "test_old_package.py"
+    test_py.write_text('import old_package\n\ndef test_version():\n    assert old_package.__version__')
+    
+    # Create setup.py
+    setup_py = temp_dir / "setup.py"
+    setup_content = 'from setuptools import setup\n\nsetup(\n    name="old-package",\n    packages=["old_package"],\n    entry_points={\n        "console_scripts": [\n            "old-package=old_package.__main__:main",\n        ],\n    },\n)'
+    setup_py.write_text(setup_content)
+    
+    # Create README
+    readme = temp_dir / "README.md"
+    readme.write_text("# old-package\n\nInstall with `pip install old-package`")
+    
+    # Create config file
+    config = {
+        "package_name": "old-package",
+        "author": "Test Author",
+        "github": {
+            "username": "testuser"
+        }
+    }
+    config_file = temp_dir / "pkgmngr.toml"
+    import toml
+    with open(config_file, "w") as f:
+        toml.dump(config, f)
+    
+    # Simply return the temp directory
+    return temp_dir
+
+
+@pytest.fixture
+def sample_project(temp_dir):
+    """Create a sample project structure for snapshot testing."""
+    # Create a simple project structure
+    pkg_dir = temp_dir / "test_pkg"
+    pkg_dir.mkdir()
+    
+    # Create some Python files
+    init_py = pkg_dir / "__init__.py"
+    init_py.write_text('"""Test package."""\n\n__version__ = "0.1.0"')
+    
+    main_py = pkg_dir / "__main__.py"
+    main_py.write_text('"""Main module."""\n\nprint("Hello from test_pkg!")')
+    
+    # Create a README
+    readme = temp_dir / "README.md"
+    readme.write_text("# Test Package\n\nA test package for snapshot testing.")
+    
+    # Create a .gitignore file
+    gitignore = temp_dir / ".gitignore"
+    gitignore.write_text("__pycache__/\n*.py[cod]\n*$py.class\n\n# Snapshots\nsnapshots/")
     
     return temp_dir

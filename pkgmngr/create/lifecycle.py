@@ -18,6 +18,7 @@ from pkgmngr.common.utils import sanitize_package_name
 from pkgmngr.common.errors import PackageError, GitError, GithubError, ConfigError, error_handler, try_operation
 from pkgmngr.common.cli import display_info, display_success, display_warning, display_error, get_input_with_default
 from pkgmngr.common.config import load_config, save_config, get_github_info
+from pkgmngr.common.pypi import check_name_availability
 
 
 @contextmanager

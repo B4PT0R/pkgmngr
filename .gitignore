@@ -1,14 +1,14 @@
 # Default .gitignore created by pkgmngr
 # Includes common patterns for Python projects
 
-# pkgmngr snapshots output
-snapshots/
-
 # pkgmngr config file
 pkgmngr.toml
 
-# Example of pkgmngr specific exclusions
-# Git will ignore lines with a leading #pkgmngr comment, but pkgmngr will use them
+# pkgmngr snapshots
+snapshots/
+
+# Example of pkgmngr-specific exclusions
+# Git will ignore lines with a leading #pkgmngr comment, but snapshot will use them
 #pkgmngr my_secret_config.ini
 #pkgmngr temporary_work/
 

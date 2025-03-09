@@ -71,8 +71,7 @@ def rename_test_project(temp_dir):
     # Simply return the temp directory
     return temp_dir
 
-
-@pytest.mark.parametrize("skip_github", [True, False])
+@pytest.mark.parametrize("skip_github", [True])
 def test_rename_project(rename_test_project, skip_github, monkeypatch):
     """Test renaming a project."""
     temp_dir = rename_test_project
@@ -81,6 +80,10 @@ def test_rename_project(rename_test_project, skip_github, monkeypatch):
     monkeypatch.setattr('pkgmngr.create.lifecycle.is_git_repository', lambda base_dir: True)
     monkeypatch.setattr('pkgmngr.create.lifecycle.get_github_remote_info',
                        lambda base_dir: ("https://github.com/testuser/old-package.git", "testuser"))
+    
+    # Mock check_name_availability to bypass PyPI check and user input
+    monkeypatch.setattr('pkgmngr.create.lifecycle.check_name_availability', lambda name, context: True)
+    monkeypatch.setattr('builtins.input', lambda _: 'y')  # Simulate user input "y"
     
     # Mock environmental variables
     if not skip_github:

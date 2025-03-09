@@ -48,10 +48,10 @@ def restore_from_snapshot(snapshot_file_path: str, target_dir: str,
         backup_file = create_backup_if_needed(target_dir, create_backup, is_backup, backup_path)
         
         # Parse the snapshot file
-        file_contents, comment = parse_snapshot_file(snapshot_file_path)
+        file_contents, comment, project_name = parse_snapshot_file(snapshot_file_path)
         
-        # Display snapshot comment if present
-        display_snapshot_comment(comment)
+        # Display snapshot metadata if present
+        display_snapshot_metadata(comment, project_name)
         
         # Restore files
         print(f"Restoring files to {target_dir}...")
@@ -68,6 +68,22 @@ def restore_from_snapshot(snapshot_file_path: str, target_dir: str,
         else:
             raise RestoreError(f"Failed to restore from snapshot: {str(e)}")
 
+def display_snapshot_metadata(comment, project_name):
+    """
+    Display the snapshot metadata if present.
+    
+    Args:
+        comment: Comment from the snapshot
+        project_name: Project name from the snapshot
+    """
+    if project_name:
+        print(f"\nRestoring snapshot of project: {project_name}")
+        
+    if comment:
+        print("\nSnapshot comment:")
+        print(f"----------------")
+        print(comment)
+        print()
 
 def validate_restore_parameters(snapshot_file_path, target_dir, mode):
     """
@@ -191,20 +207,6 @@ def create_backup_snapshot(target_dir: str, backup_path: str = None, comment: st
         return output_file
     except Exception as e:
         raise RestoreError(f"Failed to create backup snapshot: {str(e)}")
-
-
-def display_snapshot_comment(comment):
-    """
-    Display the snapshot comment if present.
-    
-    Args:
-        comment: Comment from the snapshot
-    """
-    if comment:
-        print("\nSnapshot comment:")
-        print(f"----------------")
-        print(comment)
-        print()
 
 
 def restore_files(file_contents: Dict[str, str], target_dir: str, mode: str = 'overwrite') -> Tuple[int, int]:
@@ -333,10 +335,10 @@ def selective_restore(snapshot_file_path: str, target_dir: str,
         backup_file = create_backup_if_needed(target_dir, create_backup, is_backup, backup_path)
         
         # Parse the snapshot file
-        file_contents, comment = parse_snapshot_file(snapshot_file_path)
+        file_contents, comment, project_name = parse_snapshot_file(snapshot_file_path)
         
-        # Display comment if present
-        display_snapshot_comment(comment)
+        # Display metadata if present
+        display_snapshot_metadata(comment, project_name)
         
         # Filter files based on patterns and user selection
         selected_files = select_files_for_restoration(file_contents, target_dir, patterns, 

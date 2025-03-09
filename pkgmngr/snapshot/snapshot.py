@@ -91,9 +91,17 @@ def generate_snapshot_content(start_path, gitignore_spec, output_folder, timesta
     Returns:
         List of content lines for the snapshot
     """
+    # Get package name from either config or directory name
+    package_name = get_package_name_for_snapshot(start_path)
+    
     # Start with header
     content = [
-        f"# Package Snapshot - Generated on {timestamp}",
+        f"# {package_name} - Package Snapshot - Generated on {timestamp}",
+        "",
+        "**Note:** All triple prime characters (′′′) within file content blocks should be interpreted as triple backticks.",
+        "This convention prevents formatting issues in the snapshot markdown.",
+        "(Don't forget to replace them when you copy/paste directly from the snapshot.)"
+        "",
         "",
     ]
     
@@ -130,6 +138,29 @@ def generate_snapshot_content(start_path, gitignore_spec, output_folder, timesta
     
     return content
 
+def get_package_name_for_snapshot(start_path):
+    """
+    Get the package name for the snapshot header.
+    
+    Args:
+        start_path: The root directory to snapshot
+        
+    Returns:
+        str: Package name or directory name if package name can't be determined
+    """
+    # First try to load from config
+    try:
+        from pkgmngr.common.config import load_config
+        config, _ = load_config(start_path)
+        if "package_name" in config:
+            return config["package_name"]
+    except Exception:
+        # If config loading fails, use directory name
+        pass
+        
+    # Use directory name as fallback
+    import os
+    return os.path.basename(os.path.abspath(start_path))
 
 def load_gitignore_patterns(start_path):
     """
@@ -262,7 +293,7 @@ def get_file_tree(start_path: str, gitignore_spec, output_folder: str) -> str:
         tree_lines = build_tree_representation_markdown(start_path, visible_directories, gitignore_spec, output_folder)
         
         # Return a code block with the tree content for better formatting
-        return "′′′\n" + "\n".join(tree_lines) + "\n′′′"
+        return "```\n" + "\n".join(tree_lines) + "\n```"
     except Exception as e:
         raise SnapshotError(f"Failed to generate directory tree: {str(e)}")
 
@@ -507,7 +538,7 @@ def collect_file_contents(start_path, file_paths):
     """
     content = []
     
-    # Define Unicode character for backtick replacement
+    # Define Unicode character for inner code block replacement
     BACKTICK_REPLACEMENT = '′'  # Prime character (U+2032)
     
     for rel_path in file_paths:
@@ -523,10 +554,11 @@ def collect_file_contents(start_path, file_paths):
                 with open(file_path, 'r', encoding='utf-8') as f:
                     file_content = f.read()
                     
-                    # If the file contains triple backticks, replace them
-                    if '′′′' in file_content:
+                    # If the file contains triple backticks, replace them with primes
+                    # This prevents them from breaking the outer code blocks
+                    if '```' in file_content:
                         # Replace backticks with the unicode character
-                        file_content = file_content.replace('′′′', f"{BACKTICK_REPLACEMENT}{BACKTICK_REPLACEMENT}{BACKTICK_REPLACEMENT}")
+                        file_content = file_content.replace('```', f"{BACKTICK_REPLACEMENT}{BACKTICK_REPLACEMENT}{BACKTICK_REPLACEMENT}")
                     
                     content.extend(format_text_file(rel_path, anchor, language, file_content))
             except UnicodeDecodeError:
@@ -570,9 +602,9 @@ def format_text_file(rel_path, anchor, language, file_content):
     return [
         f"<a id=\"{anchor}\"></a>",
         f"### {rel_path}",
-        f"′′′{language}",
+        f"```{language}",
         file_content,
-        "′′′",
+        "```",
         "",  # Empty line after file content
     ]
 
@@ -585,9 +617,10 @@ def parse_snapshot_file(snapshot_file_path: str):
         snapshot_file_path: Path to the markdown snapshot file to parse
         
     Returns:
-        Tuple of (file_contents, comment) where:
+        Tuple of (file_contents, comment, project_name) where:
         - file_contents: Dictionary mapping file paths to their contents
         - comment: Optional comment from the snapshot
+        - project_name: Optional project name from the snapshot header
         
     Raises:
         SnapshotError: If parsing fails
@@ -598,11 +631,12 @@ def parse_snapshot_file(snapshot_file_path: str):
         with open(snapshot_file_path, 'r', encoding='utf-8') as f:
             content = f.read()
         
-        # Extract file contents and comment
+        # Extract file contents and metadata
         file_contents = extract_file_contents_from_snapshot(content)
         comment = extract_comment_from_snapshot(content)
+        project_name = extract_project_name_from_snapshot(content)
         
-        return file_contents, comment
+        return file_contents, comment, project_name
     except Exception as e:
         raise SnapshotError(f"Failed to parse snapshot file: {str(e)}")
 
@@ -620,6 +654,23 @@ def extract_comment_from_snapshot(content):
     comment_match = re.search(r"## Comments\n(.*?)(?=\n##|\Z)", content, re.DOTALL)
     if comment_match:
         return comment_match.group(1).strip()
+    return None
+
+
+def extract_project_name_from_snapshot(content):
+    """
+    Extract the project name from snapshot header.
+    
+    Args:
+        content: The full snapshot content
+        
+    Returns:
+        The project name or None if not found
+    """
+    # Match both the old and new format
+    header_match = re.search(r"^# (.*?)( - )?Package Snapshot - Generated on", content)
+    if header_match and header_match.group(1):
+        return header_match.group(1)
     return None
 
 
@@ -642,10 +693,12 @@ def extract_file_contents_from_snapshot(content):
         file_contents[file_path] = "[Binary file - contents not shown]"
     
     # Pattern to match regular files with code blocks
-    # This pattern will match both backticks and prime characters for compatibility
-    code_pattern = r'<a id="[^"]+"></a>\n### ([^\n]+)\n(?:′′′)(?:[^\n]*)\n(.*?)\n(?:′′′)'
+    code_pattern = r'<a id="[^"]+"></a>\n### ([^\n]+)\n(?:```)(?:[^\n]*)\n(.*?)\n(?:```)'
     for match in re.finditer(code_pattern, content, re.DOTALL):
         file_path = match.group(1).strip()
-        file_contents[file_path] = match.group(2)
-    
+        file_content = match.group(2)
+        # Replace any primes used for inner code blocks back to backticks
+        file_content = file_content.replace("′′′", "```")
+        file_contents[file_path] = file_content
+
     return file_contents

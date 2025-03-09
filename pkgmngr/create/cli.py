@@ -100,12 +100,12 @@ def create_from_config(base_dir=None):
     # Load configuration
     config, config_path = load_and_validate_config(base_dir)
     
-    # Extract configuration values
-    package_name, author, year, github_username = extract_config_values(config)
+    # Extract package name (the only parameter we still need)
+    package_name = config.get("package_name")
     
     # Create package structure
     display_info(f"Creating package structure for '{package_name}'...")
-    create_package_structure(package_name, author, year, github_username)
+    create_package_structure(package_name)
     
     display_success("Package created successfully!")
     return 0
@@ -134,26 +134,6 @@ def load_and_validate_config(base_dir):
         raise ConfigError("Package name not specified in config file")
     
     return config, config_path
-
-
-def extract_config_values(config):
-    """
-    Extract values from the configuration.
-    
-    Args:
-        config: Configuration dictionary
-        
-    Returns:
-        Tuple of (package_name, author, year, github_username)
-    """
-    package_name = config.get("package_name")
-    author = config.get("author", "Your Name")
-    year = config.get("year", str(None))
-    
-    # Get GitHub username if available
-    github_username, _ = get_github_info()
-    
-    return package_name, author, year, github_username
 
 
 @error_handler

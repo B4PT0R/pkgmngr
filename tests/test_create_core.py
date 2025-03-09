@@ -33,7 +33,7 @@ def test_create_package_structure(temp_dir, monkeypatch):
             github={'username':github_username, 'private':False}
         )
         
-        create_package_structure(package_name, author, year, github_username)
+        create_package_structure(package_name)
         
         # Check that the basic structure was created
         package_dir = temp_dir / "test_package"

@@ -758,14 +758,75 @@ def push_changes_to_remote():
     )
     display_success(f"Pushed changes to GitHub (branch: {current_branch})")
 
+def increment_version(base_dir=None, increment_type='patch'):
+    """
+    Increment the package version according to semantic versioning.
+    
+    Args:
+        base_dir: Base directory (default: current directory)
+        increment_type: Type of increment ('major', 'minor', or 'patch')
+        
+    Returns:
+        Tuple of (old_version, new_version)
+    """
+    base_dir = base_dir or os.getcwd()
+    
+    # Load config to get package name and current version
+    config, config_path = load_config(base_dir)
+    
+    # Get current version
+    current_version = config.get("version", "0.1.0")
+    
+    # Parse semantic version
+    try:
+        major, minor, patch = map(int, current_version.split('.'))
+    except ValueError:
+        display_warning(f"Could not parse version '{current_version}'. Using 0.1.0.")
+        major, minor, patch = 0, 1, 0
+    
+    # Increment according to level
+    if increment_type == 'major':
+        major += 1
+        minor = 0
+        patch = 0
+    elif increment_type == 'minor':
+        minor += 1
+        patch = 0
+    else:  # patch by default
+        patch += 1
+    
+    # Build new version string
+    new_version = f"{major}.{minor}.{patch}"
+    
+    # Update version in config
+    config["version"] = new_version
+    save_config(config, config_path)
+    display_info(f"Updated version in config: {current_version} → {new_version}")
+    
+    # Update version in __init__.py
+    package_name = config.get("package_name")
+    sanitized_name = sanitize_package_name(package_name)
+    init_py_path = os.path.join(base_dir, sanitized_name, "__init__.py")
+    if os.path.exists(init_py_path):
+        update_file_content(init_py_path, f'__version__ = "{current_version}"', f'__version__ = "{new_version}"')
+        display_info(f"Updated version in {init_py_path}")
+    
+    # Update version in setup.py
+    setup_py_path = os.path.join(base_dir, "setup.py")
+    if os.path.exists(setup_py_path):
+        update_file_content(setup_py_path, f'version="{current_version}"', f'version="{new_version}"')
+        display_info(f"Updated version in {setup_py_path}")
+    
+    return current_version, new_version
 
 @error_handler
-def upload_to_pypi(test=False, base_dir=None):
+def upload_to_pypi(test=False, bump="patch", base_dir=None):
     """
     Build and upload the package to PyPI or TestPyPI.
     
     Args:
         test: If True, upload to TestPyPI instead of PyPI
+        bump: Version increment type ('major', 'minor', or 'patch')
         base_dir: Base directory (default: current directory)
     
     Returns:
@@ -777,6 +838,11 @@ def upload_to_pypi(test=False, base_dir=None):
     verify_required_tools()
     
     with change_directory(base_dir):
+        # Increment version if requested
+        if bump:
+            old_version, new_version = increment_version(base_dir, bump)
+            display_success(f"Incremented version: {old_version} → {new_version}")
+        
         # Clean, build and upload
         clean_build_artifacts()
         build_package()

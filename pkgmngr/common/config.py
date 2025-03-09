@@ -143,6 +143,7 @@ def create_default_config(package_name: str, output_dir: str) -> str:
     
     config = {
         "package_name": package_name,
+        "version": "0.1.0",
         "author": author,
         "year": str(current_year),
         "description": f"A Python package named {package_name}",

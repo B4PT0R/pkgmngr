@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python Versions](https://img.shields.io/badge/python-3.6%2B-blue)](https://www.python.org/)
 
-A comprehensive Python package utility that streamlines creation, snapshotting, and lifecycle management of Python packages. Designed for modern Python development workflows, pkgmngr helps developers save time on repetitive setup tasks and enhances collaboration, including AI-assisted development.
+A comprehensive command line utility that streamlines creation, snapshotting, and lifecycle management of Python packages. Designed for modern Python development workflows, pkgmngr helps developers save time on repetitive setup tasks and enhances collaboration, including AI-assisted development.
 
 ## Why pkgmngr?
 
@@ -138,30 +138,6 @@ Package successfully created with the following structure:
 
 The `create` command generates a standard Python package structure based on your configuration.
 
-### GitHub Integration
-
-Initialize Git and create a GitHub repository:
-
-```bash
-# Set your GitHub token as an environment variable
-export GITHUB_TOKEN=your_github_token_here
-
-# Initialize Git and GitHub repositories
-pkgmngr init-repo
-```
-
-Output:
-```
-ℹ️ Detected GitHub repository: yourusername/my-package
-ℹ️ Initialized empty Git repository
-ℹ️ Created initial commit
-ℹ️ Creating GitHub repository: yourusername/my-package...
-✅ Created GitHub repository: yourusername/my-package
-ℹ️ Pushing code to GitHub...
-✅ Pushed code to GitHub: https://github.com/yourusername/my-package.git
-✅ Repository initialization completed successfully!
-```
-
 ### Taking Snapshots
 
 Snapshots create comprehensive Markdown documentation of your codebase:
@@ -218,7 +194,8 @@ Restoration modes:
 
 #### Renaming Packages
 
-The `rename` command allows you to change your package name and automatically updates all references:
+Renaming packages is often a pain in the neck...
+The `rename` command allows you to change your package name and automatically updates all references to that name across your package with ease:
 
 ```bash
 # Rename a package (and update all references)
@@ -227,19 +204,15 @@ pkgmngr rename old-package-name new-package-name
 
 This command:
 - Updates the package directory name (`old_name` → `new_name`)
-- Updates imports in all Python files
-- Renames test files to match the new package name
-- Updates `setup.py` with the new package name
-- Updates the README.md with the new name
-- Updates the `pkgmngr.toml` configuration file
+- Updates all occurences of the old name found across directory names, file names, and file contents of your whole project.
+- Renames the online GitHub repository too (if any).
 
 Output:
 ```
 ℹ️ Updated config file with new package name: new-package-name
 ℹ️ Renamed package directory: old_package_name → new_package_name
-ℹ️ Renamed test file: tests/test_old_package_name.py → tests/test_new_package_name.py
-ℹ️ Updated references in setup.py
 ℹ️ Updated references in README.md
+...
 ✅ Project successfully renamed from 'old-package-name' to 'new-package-name'
 ```
 
@@ -252,18 +225,112 @@ pkgmngr rename my-package awesome-package
 
 Note that this command must be run from the package root directory (where the `pkgmngr.toml` file is located).
 
-#### GitHub and PyPI Management
+#### GitHub Integration
+
+##### GitHub Personal Access Token
+
+For GitHub integration, you'll need a GitHub Personal Access Token with the `repo` scope:
+
+1. Go to GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)
+2. Generate a new token with the `repo` scope
+3. Set it as the `GITHUB_TOKEN` environment variable:
+   ```bash
+   export GITHUB_TOKEN=your_token_here
+   ```
+
+##### Usage
+
+Initialize Git and create a GitHub repository:
+
+```bash
+# Initialize Git and GitHub repositories
+pkgmngr init-repo
+```
+
+Output:
+```
+ℹ️ Detected GitHub repository: yourusername/my-package
+ℹ️ Initialized empty Git repository
+ℹ️ Created initial commit
+ℹ️ Creating GitHub repository: yourusername/my-package...
+✅ Created GitHub repository: yourusername/my-package
+ℹ️ Pushing code to GitHub...
+✅ Pushed code to GitHub: https://github.com/yourusername/my-package.git
+✅ Repository initialization completed successfully!
+```
+
+Then you can push the changes you make to your code using the `push` command
 
 ```bash
 # Push changes to GitHub (with interactive commit message)
 pkgmngr push
+```
 
+#### PyPI Management
+
+##### PyPI/TestPyPI Authentication
+
+Publishing to PyPI or TestPyPI requires properly configured authentication for `twine`. Before using the `publish` command, ensure you have:
+
+1. A PyPI account (and TestPyPI account if using `--test`)
+2. Configured `twine` authentication using one of these methods:
+   - A `.pypirc` file in your home directory:
+     ```ini
+     [distutils]
+     index-servers=
+         pypi
+         testpypi
+
+     [pypi]
+     username = your_username
+     password = your_password
+
+     [testpypi]
+     repository = https://test.pypi.org/legacy/
+     username = your_testpypi_username
+     password = your_testpypi_password
+     ```
+   - Environment variables: `TWINE_USERNAME` and `TWINE_PASSWORD`
+   - Interactive prompt: If credentials aren't found, `twine` will prompt for them
+
+For security, using API tokens instead of passwords is recommended:
+1. Generate tokens at https://pypi.org/manage/account/#api-tokens (or https://test.pypi.org/manage/account/#api-tokens)
+2. Use the token as your password with username `__token__`
+
+The `pkgmngr publish` command relies on these authentication methods for successful uploads.
+
+##### Usage
+
+```bash
 # Publish to TestPyPI
 pkgmngr publish --test
 
-# Publish to PyPI
+# Publish to PyPI with automatic patch version increment
 pkgmngr publish
 ```
+
+The `publish` command allows automatic version increments following semantic versioning principles:
+
+```bash
+# Publish to PyPI with automatic patch version increment (e.g., 0.1.0 → 0.1.1)
+pkgmngr publish
+
+# Publish to PyPI with a minor version increment (e.g., 0.1.1 → 0.2.0)
+pkgmngr publish --bump minor
+
+# Publish to PyPI with a major version increment (e.g., 0.2.0 → 1.0.0)
+pkgmngr publish --bump major
+
+# Publish to TestPyPI with version increment
+pkgmngr publish --test --bump patch
+```
+
+Version information is tracked in your `pkgmngr.toml` configuration file and automatically updated in:
+- `pkgmngr.toml` (master record)
+- `yourpackage/__init__.py` (`__version__` attribute)
+- `setup.py` (package version)
+
+This ensures your package version is consistently maintained across all relevant files when publishing.
 
 ## Configuration
 
@@ -271,6 +338,7 @@ The `pkgmngr.toml` file contains configuration settings for your package:
 
 ```toml
 package_name = "my-package"
+version = "0.1.0"
 author = "Your Name"
 year = "2025"
 description = "A Python package named my-package"
@@ -296,17 +364,6 @@ dev_requires = [
     "black",
 ]
 ```
-
-## GitHub Personal Access Token
-
-For GitHub integration, you'll need a GitHub Personal Access Token with the `repo` scope:
-
-1. Go to GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)
-2. Generate a new token with the `repo` scope
-3. Set it as the `GITHUB_TOKEN` environment variable:
-   ```bash
-   export GITHUB_TOKEN=your_token_here
-   ```
 
 ## Snapshot Features
 

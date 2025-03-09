@@ -173,6 +173,12 @@ def register_lifecycle_commands(subparsers):
         action='store_true',
         help="Upload to TestPyPI instead of PyPI"
     )
+    publish_parser.add_argument(
+        '--bump',
+        choices=['patch', 'minor', 'major'],
+        default='patch',
+        help="Version increment type (default: patch)"
+    )
 
 
 @error_handler
@@ -229,10 +235,10 @@ def dispatch_command(args):
     elif args.command == "push":
         from pkgmngr.create.lifecycle import dump_to_github
         return dump_to_github()
-    
+        
     elif args.command == "publish":
         from pkgmngr.create.lifecycle import upload_to_pypi
-        return upload_to_pypi(test=args.test)
+        return upload_to_pypi(test=args.test, bump=args.bump)
     
     else:
         return 1

@@ -8,7 +8,7 @@ Includes functionality for:
 - Managing the package lifecycle (renaming, GitHub integration, PyPI publishing)
 """
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 
 # Import common utilities for easier access
 from pkgmngr.common.errors import PkgUtilsError, ConfigError, GitError, SnapshotError, RestoreError

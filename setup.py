@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="pkgmngr",
-    version="0.1.2",
+    version="0.1.3",
     author="Baptiste FERRAND",
     author_email="bferrand.maths@gmail.com",
     description="Comprehensive Python package utilities for creation, snapshotting, and lifecycle management",
@@ -59,6 +59,6 @@ setup(
         "Documentation": "https://github.com/B4PT0R/pkgmngr#readme",
     },
     package_data={
-        "pkgmngr": ["templates/*.tpl", "*.md"],
+        "pkgmngr": ["templates/*.txt", "*.md"],
     },
 )

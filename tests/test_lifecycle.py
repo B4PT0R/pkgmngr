@@ -5,7 +5,7 @@ import os
 import pytest
 import toml
 from pathlib import Path
-from pkgmngr.create.lifecycle import (
+from pkgmngr.lifecycle.rename import (
     rename_project,
     update_file_content
 )
@@ -77,18 +77,18 @@ def test_rename_project(rename_test_project, skip_github, monkeypatch):
     temp_dir = rename_test_project
     
     # Mock functions that interact with external systems
-    monkeypatch.setattr('pkgmngr.create.lifecycle.is_git_repository', lambda base_dir: True)
-    monkeypatch.setattr('pkgmngr.create.lifecycle.get_github_remote_info',
+    monkeypatch.setattr('pkgmngr.lifecycle.rename.is_git_repository', lambda base_dir: True)
+    monkeypatch.setattr('pkgmngr.lifecycle.rename.get_github_remote_info',
                        lambda base_dir: ("https://github.com/testuser/old-package.git", "testuser"))
     
     # Mock check_name_availability to bypass PyPI check and user input
-    monkeypatch.setattr('pkgmngr.create.lifecycle.check_name_availability', lambda name, context: True)
+    monkeypatch.setattr('pkgmngr.common.pypi.check_name_availability', lambda name, context: True)
     monkeypatch.setattr('builtins.input', lambda _: 'y')  # Simulate user input "y"
     
     # Mock environmental variables
     if not skip_github:
         monkeypatch.setenv("GITHUB_TOKEN", "fake_token")
-        monkeypatch.setattr('pkgmngr.create.lifecycle.rename_github_repository',
+        monkeypatch.setattr('pkgmngr.lifecycle.rename.rename_github_repository',
                            lambda username, old_name, new_name, token, remote_url, base_dir: True)
     
     # Run the rename function with our test directory

@@ -211,19 +211,19 @@ def dispatch_command(args):
     
     # Execute commands
     if args.command == "new":
-        from pkgmngr.create.cli import create_package_config
+        from pkgmngr.lifecycle.cli import create_package_config
         return create_package_config(args.package_name)
     
     elif args.command == "create":
-        from pkgmngr.create.cli import create_from_config
+        from pkgmngr.lifecycle.cli import create_from_config
         return create_from_config()
     
     elif args.command == "init-repo":
-        from pkgmngr.create.cli import init_repository
+        from pkgmngr.lifecycle.cli import init_repository
         return init_repository()
             
     elif args.command == "rename":
-        from pkgmngr.create.lifecycle import rename_project
+        from pkgmngr.lifecycle.rename import rename_project
         return rename_project(args.old_name, args.new_name, args.skip_github)
     
     elif args.command == "snapshot":
@@ -233,11 +233,11 @@ def dispatch_command(args):
         return handle_restore_command(args)
     
     elif args.command == "push":
-        from pkgmngr.create.lifecycle import dump_to_github
+        from pkgmngr.lifecycle.repo import dump_to_github
         return dump_to_github()
         
     elif args.command == "publish":
-        from pkgmngr.create.lifecycle import upload_to_pypi
+        from pkgmngr.lifecycle.pypi import upload_to_pypi
         return upload_to_pypi(test=args.test, bump=args.bump)
     
     else:

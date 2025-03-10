@@ -131,7 +131,7 @@ def create_default_config(package_name: str, output_dir: str,**kwargs) -> str:
         Path to the created config file
     """
     import datetime
-    from pkgmngr.create.github import get_github_username_from_git, get_user_email_from_git
+    from pkgmngr.lifecycle.github import get_github_username_from_git, get_user_email_from_git
     
     # Ensure directory exists
     os.makedirs(output_dir, exist_ok=True)

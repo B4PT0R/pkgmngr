@@ -4,7 +4,7 @@ Tests for the package creation core functionality.
 import os
 import pytest
 from pathlib import Path
-from pkgmngr.create.core import create_package_structure
+from pkgmngr.lifecycle.create import create_package_structure
 
 
 def test_create_package_structure(temp_dir, monkeypatch):

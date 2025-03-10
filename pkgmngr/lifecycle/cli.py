@@ -79,7 +79,7 @@ def display_success_message(package_name, config_path):
     print(f"- {config_path}")
     print("\nTo finish creating your package:")
     print(f"- Change to the project's directory: `cd {package_name}`")
-    print(f"- Review and edit the config file in your favorite editor: e.g. `nano {config_path}`")
+    print(f"- Review and edit the config file in your favorite editor: e.g. `nano pkgmngr.toml`")
     print("- Then run `pkgmngr create` to generate the project files.")
     print("Optionally you may want to initialize a Git repository synced with Github: `pkgmngr init-repo`")
     print("(Using the Github API requires that you expose a valid GITHUB_TOKEN with repo scope as environment variable)")

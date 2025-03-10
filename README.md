@@ -225,6 +225,48 @@ pkgmngr rename my-package awesome-package
 
 Note that this command must be run from the package root directory (where the `pkgmngr.toml` file is located).
 
+#### Package-wide Text Replacement
+
+The `replace` command provides a safe way to replace text across your entire package:
+
+```bash
+# Replace text across all files
+pkgmngr replace "old_text" "new_text"
+
+# Use regular expressions
+pkgmngr replace --regex "function\s+old_name" "function new_name" 
+
+# Target specific file types
+pkgmngr replace "old_api" "new_api" --pattern "*.py" --pattern "*.md"
+
+# Exclude certain files or directories
+pkgmngr replace "old_version" "new_version" --exclude "changelog.md" --exclude "tests/*.py"
+
+# Case-insensitive replacement
+pkgmngr replace --case-insensitive "deprecatedFunction" "newFunction"
+```
+
+This command includes several safety features:
+- Creates an automatic snapshot backup before making changes
+- Shows a preview of changes with file diffs
+- Requires confirmation before applying changes
+- Allows filtering by file patterns
+- Skips binary files automatically
+
+Options:
+- `-r, --regex`: Interpret patterns as regular expressions
+- `-i, --case-insensitive`: Perform case-insensitive matching
+- `-p, --pattern`: Only process files matching this glob pattern (can be used multiple times)
+- `-e, --exclude`: Exclude files matching this glob pattern (can be used multiple times)
+- `--no-backup`: Skip creating a backup snapshot
+- `--no-preview`: Skip showing the preview of changes
+
+The feature is ideal for:
+- Updating API references across your codebase
+- Changing function or class names consistently
+- Standardizing naming conventions
+- Modifying code patterns project-wide
+
 #### GitHub Integration
 
 ##### GitHub Personal Access Token

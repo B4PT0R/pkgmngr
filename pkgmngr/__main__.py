@@ -41,6 +41,9 @@ Examples:
   
   # Rename a package (including GitHub repository)
   pkgmngr rename old-package-name new-package-name
+
+  # Replace text across the package
+  pkgmngr replace old-text new-text
   
   # Push changes to GitHub
   pkgmngr push
@@ -180,6 +183,17 @@ def register_lifecycle_commands(subparsers):
         help="Version increment type (default: patch)"
     )
 
+    # 'replace' command
+    replace_parser = subparsers.add_parser("replace", help="Safely replace text across all files")
+    replace_parser.add_argument("old_pattern", help="Pattern to search for")
+    replace_parser.add_argument("new_pattern", help="Pattern to replace with")
+    replace_parser.add_argument("-r", "--regex", action="store_true", help="Treat patterns as regular expressions")
+    replace_parser.add_argument("-i", "--case-insensitive", action="store_true", help="Perform case-insensitive matching")
+    replace_parser.add_argument("-p", "--pattern", action="append", dest="patterns", help="Only process files matching this glob pattern")
+    replace_parser.add_argument("-e", "--exclude", action="append", dest="exclude_patterns", help="Exclude files matching this glob pattern")
+    replace_parser.add_argument("--no-backup", action="store_true", help="Don't create a backup snapshot before replacement")
+    replace_parser.add_argument("--no-preview", action="store_true", help="Don't show preview of changes")
+
 
 @error_handler
 def handle_version_command():
@@ -225,6 +239,10 @@ def dispatch_command(args):
     elif args.command == "rename":
         from pkgmngr.lifecycle.rename import rename_project
         return rename_project(args.old_name, args.new_name, args.skip_github)
+    
+    elif args.command == "replace":
+        from pkgmngr.lifecycle.replace import handle_replace_command
+        return handle_replace_command(args)
     
     elif args.command == "snapshot":
         return handle_snapshot_command(args)
@@ -367,7 +385,6 @@ def handle_standard_restore(snapshot_file, target_dir, mode, create_backup):
     except Exception as e:
         display_error(f"Error during restoration: {e}")
         return 1
-
 
 def main():
     """

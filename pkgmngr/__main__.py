@@ -160,12 +160,12 @@ def register_lifecycle_commands(subparsers):
     Args:
         subparsers: Subparsers object to add to
     """
-    # 'rename' command
+    # 'rename' command - Updated to only require new name
     rename_parser = subparsers.add_parser("rename", help="Rename the package, update all references, and optionally rename GitHub repository")
-    rename_parser.add_argument("old_name", help="Current name of the package")
     rename_parser.add_argument("new_name", help="New name for the package")
     rename_parser.add_argument("--skip-github", action="store_true", help="Skip GitHub repository renaming even if GitHub token is available")
     
+    # Other commands remain unchanged
     # 'push' command
     subparsers.add_parser("push", help="Commit all changes and push to GitHub")
     
@@ -238,7 +238,7 @@ def dispatch_command(args):
             
     elif args.command == "rename":
         from pkgmngr.lifecycle.rename import rename_project
-        return rename_project(args.old_name, args.new_name, args.skip_github)
+        return rename_project(args.new_name, args.skip_github)
     
     elif args.command == "replace":
         from pkgmngr.lifecycle.replace import handle_replace_command

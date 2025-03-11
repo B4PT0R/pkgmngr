@@ -1,28 +1,25 @@
+"""
+Simplified package renaming functionality.
+"""
 import os
 import subprocess
 import json
 import requests
 from pathlib import Path
 
-from pkgmngr.common.utils import sanitize_package_name, change_directory, is_git_repository, update_file_content
+from pkgmngr.common.utils import sanitize_package_name, change_directory, is_git_repository
 from pkgmngr.common.errors import PackageError, GitError, GithubError, ConfigError, error_handler, try_operation
 from pkgmngr.common.cli import display_info, display_success, display_warning, display_error
 from pkgmngr.common.config import load_config, save_config
+from pkgmngr.lifecycle.replace import safe_replace
 
 @error_handler
-def rename_project(old_name, new_name, skip_github=False, base_dir=None):
+def rename_project(new_name, skip_github=False, base_dir=None):
     """
     Rename a project, updating all references to the old name,
     and optionally renaming the GitHub repository.
     
-    This function performs a comprehensive scan of the project to replace:
-    - The package directory name
-    - All occurrences of the old name in file contents
-    - All occurrences of the sanitized old name in file contents
-    - Files with the old name or sanitized old name in their filename
-    
     Args:
-        old_name: Current name of the package
         new_name: New name for the package
         skip_github: If True, skip GitHub repository renaming even if token is available
         base_dir: Base directory (default: current directory)
@@ -30,18 +27,24 @@ def rename_project(old_name, new_name, skip_github=False, base_dir=None):
     Returns:
         int: 0 if successful, 1 otherwise
     """
+    # Use provided base directory or current directory
+    base_dir = base_dir or os.getcwd()
+    
+    # Load config and get the current package name
+    try:
+        config, config_path = load_config(base_dir)
+        old_name = config.get("package_name")
+        if not old_name:
+            raise ConfigError("Current package name not found in config file")
+    except FileNotFoundError:
+        raise ConfigError("Config file not found in current directory. Run 'pkgmngr new PACKAGE_NAME' first or change to the package directory.")
+    
     # Check PyPI availability for the new name
     from pkgmngr.common.pypi import check_name_availability
     
     if not check_name_availability(new_name, context="rename"):
         display_info("Rename operation cancelled.")
         return 0
-    
-    # Use provided base directory or current directory
-    base_dir = base_dir or os.getcwd()
-    
-    # Validate package names and load config
-    config, config_path = validate_rename_parameters(old_name, base_dir)
     
     # Create sanitized versions of names
     old_sanitized = sanitize_package_name(old_name)
@@ -56,14 +59,8 @@ def rename_project(old_name, new_name, skip_github=False, base_dir=None):
     # Rename package directory
     rename_directory(base_dir, old_sanitized, new_sanitized)
     
-    # Track renamed files to avoid processing them twice
-    renamed_files = set()
-    
-    # First pass: rename files with old_name or old_sanitized in their names
-    renamed_files.update(rename_files_with_pattern(base_dir, old_name, new_name, old_sanitized, new_sanitized))
-    
-    # Second pass: update content in all files
-    update_file_contents_recursively(base_dir, old_name, new_name, old_sanitized, new_sanitized, renamed_files)
+    # Replace all occurrences of package name in all files
+    replace_package_name_references(base_dir, old_name, new_name, old_sanitized, new_sanitized)
     
     # Handle GitHub repository renaming if applicable
     handle_github_rename(github_info, old_name, new_name, base_dir, skip_github)
@@ -90,9 +87,22 @@ def rename_directory(base_dir, old_sanitized, new_sanitized):
         os.rename(old_pkg_dir, new_pkg_dir)
         display_info(f"Renamed package directory: {old_sanitized} → {new_sanitized}")
 
-def rename_files_with_pattern(base_dir, old_name, new_name, old_sanitized, new_sanitized):
+def update_config_file(config, new_name, config_path):
     """
-    Rename all files containing the old name pattern in their filename.
+    Update the configuration file with the new package name.
+    
+    Args:
+        config: Configuration dictionary
+        new_name: New package name
+        config_path: Path to the config file
+    """
+    config["package_name"] = new_name
+    save_config(config, config_path)
+    display_info(f"Updated config file with new package name: {new_name}")
+
+def replace_package_name_references(base_dir, old_name, new_name, old_sanitized, new_sanitized):
+    """
+    Replace all references to the old package name and its sanitized version.
     
     Args:
         base_dir: Base directory
@@ -100,147 +110,27 @@ def rename_files_with_pattern(base_dir, old_name, new_name, old_sanitized, new_s
         new_name: New package name
         old_sanitized: Sanitized old package name
         new_sanitized: Sanitized new package name
-        
-    Returns:
-        Set of paths of renamed files
     """
-    renamed_files = set()
+    # Replace the exact hyphenated package name
+    display_info(f"Replacing occurrences of '{old_name}' with '{new_name}'...")
+    safe_replace(
+        base_dir=base_dir,
+        old_pattern=old_name,
+        new_pattern=new_name,
+        preview=False,
+        create_backup=False,  # Skip backup since we only do it once
+    )
     
-    for root, dirs, files in os.walk(base_dir):
-        # Skip .git directory and any hidden directories
-        dirs[:] = [d for d in dirs if not d.startswith('.')]
-        
-        # Process each file in this directory
-        for filename in files:
-            file_path = os.path.join(root, filename)
-            
-            # Skip binary files
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    # Just try to read a bit to see if it's text
-                    f.read(4096)
-            except (UnicodeDecodeError, IOError):
-                continue
-            
-            # Check if filename contains old_name or old_sanitized
-            old_name_in_filename = old_name in filename
-            old_sanitized_in_filename = old_sanitized in filename
-            
-            if old_name_in_filename or old_sanitized_in_filename:
-                # Create new filename
-                new_filename = filename
-                if old_name_in_filename:
-                    new_filename = new_filename.replace(old_name, new_name)
-                if old_sanitized_in_filename:
-                    new_filename = new_filename.replace(old_sanitized, new_sanitized)
-                
-                # Rename the file
-                new_file_path = os.path.join(root, new_filename)
-                if not os.path.exists(new_file_path):
-                    os.rename(file_path, new_file_path)
-                    display_info(f"Renamed file: {file_path} → {new_file_path}")
-                    renamed_files.add(new_file_path)
-    
-    return renamed_files
-
-def update_file_contents_recursively(base_dir, old_name, new_name, old_sanitized, new_sanitized, renamed_files=None):
-    """
-    Update references to old name and old sanitized name in all text files.
-    
-    Args:
-        base_dir: Base directory
-        old_name: Old package name
-        new_name: New package name
-        old_sanitized: Sanitized old package name
-        new_sanitized: Sanitized new package name
-        renamed_files: Set of files that have been renamed (to avoid processing them twice)
-    """
-    if renamed_files is None:
-        renamed_files = set()
-    
-    # Create a counter for modified files
-    files_modified = 0
-    
-    # Extensions to process - add more as needed
-    text_extensions = {
-        '.py', '.md', '.txt', '.rst', '.json', '.yaml', '.yml', 
-        '.toml', '.ini', '.cfg', '.html', '.css', '.js',
-        '.sh', '.bat', '.ps1', '.dockerfile', '.svg'
-    }
-    
-    for root, dirs, files in os.walk(base_dir):
-        # Skip .git directory and any hidden directories
-        dirs[:] = [d for d in dirs if not d.startswith('.')]
-        
-        # Process each file in this directory
-        for filename in files:
-            file_path = os.path.join(root, filename)
-            
-            # Skip if this file was already renamed
-            if file_path in renamed_files:
-                continue
-                
-            # Skip non-text files and files with extensions we don't care about
-            _, ext = os.path.splitext(filename)
-            if ext.lower() not in text_extensions:
-                try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
-                        # Just try to read a bit to see if it's text
-                        f.read(4096)
-                except (UnicodeDecodeError, IOError):
-                    continue
-            
-            # Update file content
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    content = f.read()
-                
-                # Check if content contains any patterns we need to replace
-                original_content = content
-                
-                # Replace package name
-                if old_name in content:
-                    content = content.replace(old_name, new_name)
-                
-                # Replace sanitized package name
-                if old_sanitized in content:
-                    content = content.replace(old_sanitized, new_sanitized)
-                
-                # Write content back if modified
-                if content != original_content:
-                    with open(file_path, 'w', encoding='utf-8') as f:
-                        f.write(content)
-                    files_modified += 1
-            except (UnicodeDecodeError, IOError):
-                # Skip binary files or files with encoding issues
-                continue
-    
-    display_info(f"Updated content in {files_modified} files")
-
-def validate_rename_parameters(old_name, base_dir):
-    """
-    Validate package names and load configuration.
-    
-    Args:
-        old_name: Current name of the package
-        base_dir: Base directory
-        
-    Returns:
-        Tuple of (config, config_path)
-        
-    Raises:
-        ConfigError: If validation fails
-    """
-    try:
-        config, config_path = load_config(base_dir)
-    except FileNotFoundError:
-        raise ConfigError("Config file not found in current directory. Run 'pkgmngr new PACKAGE_NAME' first or change to the package directory.")
-        
-    current_name = config.get("package_name")
-    if current_name != old_name:
-        raise ConfigError(f"Current package name in config is '{current_name}', not '{old_name}'")
-    
-    return config, config_path
+    # Only replace sanitized name if it's different from the original
+    if old_sanitized != old_name:
+        display_info(f"Replacing occurrences of '{old_sanitized}' with '{new_sanitized}'...")
+        safe_replace(
+            base_dir=base_dir,
+            old_pattern=old_sanitized,
+            new_pattern=new_sanitized,
+            preview=False,
+            create_backup=False,  # Skip backup since we only do it once
+        )
 
 def check_github_integration(base_dir, skip_github):
     """
@@ -270,105 +160,56 @@ def check_github_integration(base_dir, skip_github):
     
     return None
 
-def update_config_file(config, new_name, config_path):
+def get_github_remote_info(base_dir=None):
     """
-    Update the configuration file with the new package name.
+    Get GitHub remote URL and username from a Git repository.
     
     Args:
-        config: Configuration dictionary
-        new_name: New package name
-        config_path: Path to the config file
+        base_dir: Base directory to check (default: current directory)
+        
+    Returns:
+        tuple: (remote_url, username) or (None, None) if not found
     """
-    config["package_name"] = new_name
-    save_config(config, config_path)
-    display_info(f"Updated config file with new package name: {new_name}")
+    base_dir = base_dir or os.getcwd()
+    
+    with change_directory(base_dir):
+        try:
+            # Get remote URL
+            remote_url = subprocess.check_output(
+                ["git", "remote", "get-url", "origin"],
+                stderr=subprocess.PIPE,
+                universal_newlines=True
+            ).strip()
+            
+            # Extract username from remote URL
+            return extract_github_username(remote_url)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            return None, None
 
-
-def update_test_files(base_dir, old_sanitized, new_sanitized):
+def extract_github_username(remote_url):
     """
-    Update test files for the package.
+    Extract GitHub username from a remote URL.
     
     Args:
-        base_dir: Base directory
-        old_sanitized: Sanitized old package name
-        new_sanitized: Sanitized new package name
-    """
-    test_dir = os.path.join(base_dir, "tests")
-    if not os.path.exists(test_dir):
-        return
+        remote_url: GitHub remote URL
         
-    # Rename test file
-    old_test_file = os.path.join(test_dir, f"test_{old_sanitized}.py")
-    new_test_file = os.path.join(test_dir, f"test_{new_sanitized}.py")
-    if os.path.exists(old_test_file):
-        os.rename(old_test_file, new_test_file)
-        display_info(f"Renamed test file: {old_test_file} → {new_test_file}")
-        
-    # Update content of test files to use new import
-    for test_file in Path(test_dir).glob("*.py"):
-        update_file_content(test_file, f"import {old_sanitized}", f"import {new_sanitized}")
-        update_file_content(test_file, f"from {old_sanitized}", f"from {new_sanitized}")
-
-
-def update_setup_py(base_dir, old_name, new_name, old_sanitized, new_sanitized, github_info):
+    Returns:
+        Tuple of (remote_url, username) or (remote_url, None) if not found
     """
-    Update setup.py with the new package name.
+    username = None
+    if "github.com" in remote_url:
+        if remote_url.startswith("https://"):
+            # Format: https://github.com/username/repo.git
+            parts = remote_url.split("/")
+            if len(parts) >= 4:
+                username = parts[3]
+        elif remote_url.startswith("git@"):
+            # Format: git@github.com:username/repo.git
+            parts = remote_url.split(":")
+            if len(parts) >= 2:
+                username = parts[1].split("/")[0]
     
-    Args:
-        base_dir: Base directory
-        old_name: Old package name
-        new_name: New package name
-        old_sanitized: Sanitized old package name
-        new_sanitized: Sanitized new package name
-        github_info: GitHub information dictionary or None
-    """
-    setup_py = os.path.join(base_dir, "setup.py")
-    if not os.path.exists(setup_py):
-        return
-        
-    # Update package name
-    update_file_content(setup_py, f'name="{old_name}"', f'name="{new_name}"')
-    
-    # Update packages list
-    update_file_content(setup_py, f'packages=\\["{old_sanitized}"\\]', f'packages=["{new_sanitized}"]')
-    
-    # Update entry points
-    update_file_content(
-        setup_py, 
-        f'"{old_name}={old_sanitized}', 
-        f'"{new_name}={new_sanitized}'
-    )
-    
-    # Update GitHub URL if present
-    if github_info and github_info["username"]:
-        update_file_content(
-            setup_py, 
-            f"github.com/{github_info['username']}/{old_name}", 
-            f"github.com/{github_info['username']}/{new_name}"
-        )
-
-
-def update_readme(base_dir, old_name, new_name, old_sanitized):
-    """
-    Update README.md with the new package name.
-    
-    Args:
-        base_dir: Base directory
-        old_name: Old package name
-        new_name: New package name
-        old_sanitized: Sanitized old package name
-    """
-    readme = os.path.join(base_dir, "README.md")
-    if not os.path.exists(readme):
-        return
-        
-    update_file_content(readme, f"# {old_name}", f"# {new_name}")
-    update_file_content(readme, f"pip install {old_name}", f"pip install {new_name}")
-    update_file_content(readme, f"import {old_sanitized}", f"import {sanitize_package_name(new_name)}")
-    
-    if old_name != old_sanitized:  # Only do general replacement if sanitized name differs
-        update_file_content(readme, old_name, new_name)
-
+    return remote_url, username
 
 def handle_github_rename(github_info, old_name, new_name, base_dir, skip_github):
     """
@@ -401,61 +242,7 @@ def handle_github_rename(github_info, old_name, new_name, base_dir, skip_github)
         display_warning("GITHUB_TOKEN environment variable not set. Skipping GitHub repository renaming.")
         display_info("Local project renamed successfully, but GitHub repository remains unchanged.")
         display_info("To rename the GitHub repository, set the GITHUB_TOKEN environment variable and run:")
-        display_info(f"  pkgmngr rename {new_name} {new_name}")
-
-
-def get_github_remote_info(base_dir=None):
-    """
-    Get GitHub remote URL and username from a Git repository.
-    
-    Args:
-        base_dir: Base directory to check (default: current directory)
-        
-    Returns:
-        tuple: (remote_url, username) or (None, None) if not found
-    """
-    base_dir = base_dir or os.getcwd()
-    
-    with change_directory(base_dir):
-        try:
-            # Get remote URL
-            remote_url = subprocess.check_output(
-                ["git", "remote", "get-url", "origin"],
-                stderr=subprocess.PIPE,
-                universal_newlines=True
-            ).strip()
-            
-            # Extract username from remote URL
-            return extract_github_username(remote_url)
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            return None, None
-
-
-def extract_github_username(remote_url):
-    """
-    Extract GitHub username from a remote URL.
-    
-    Args:
-        remote_url: GitHub remote URL
-        
-    Returns:
-        Tuple of (remote_url, username) or (remote_url, None) if not found
-    """
-    username = None
-    if "github.com" in remote_url:
-        if remote_url.startswith("https://"):
-            # Format: https://github.com/username/repo.git
-            parts = remote_url.split("/")
-            if len(parts) >= 4:
-                username = parts[3]
-        elif remote_url.startswith("git@"):
-            # Format: git@github.com:username/repo.git
-            parts = remote_url.split(":")
-            if len(parts) >= 2:
-                username = parts[1].split("/")[0]
-    
-    return remote_url, username
-
+        display_info(f"  pkgmngr rename {new_name}")
 
 def rename_github_repository(username, old_name, new_name, token, remote_url, base_dir=None):
     """
@@ -484,7 +271,6 @@ def rename_github_repository(username, old_name, new_name, token, remote_url, ba
     update_git_remote(base_dir, new_remote_url)
     
     return True
-
 
 def github_api_rename_repo(username, old_name, new_name, token):
     """
@@ -525,7 +311,6 @@ def github_api_rename_repo(username, old_name, new_name, token):
         display_error(f"Error renaming GitHub repository: {str(e)}")
         return False
 
-
 def generate_new_remote_url(remote_url, old_name, new_name):
     """
     Generate a new remote URL with the new repository name.
@@ -542,7 +327,6 @@ def generate_new_remote_url(remote_url, old_name, new_name):
         return remote_url.replace(f"/{old_name}.git", f"/{new_name}.git")
     else:  # SSH format
         return remote_url.replace(f"/{old_name}.git", f"/{new_name}.git")
-
 
 def update_git_remote(base_dir, new_remote_url):
     """
@@ -564,4 +348,3 @@ def update_git_remote(base_dir, new_remote_url):
             GitError
         )
         display_info(f"Updated git remote URL to {new_remote_url}")
-

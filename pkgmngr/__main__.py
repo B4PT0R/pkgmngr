@@ -10,7 +10,6 @@ from pathlib import Path
 from pkgmngr.common.errors import error_handler
 from pkgmngr.common.cli import display_info, display_error
 
-
 def create_main_parser():
     """
     Create the main argument parser with all subparsers.
@@ -66,10 +65,13 @@ Examples:
     # Register all command subparsers
     register_create_commands(subparsers)
     register_snapshot_commands(subparsers)
-    register_lifecycle_commands(subparsers)
+    register_restore_commands(subparsers)
+    register_rename_commands(subparsers)
+    register_replace_commands(subparsers)
+    register_push_commands(subparsers)
+    register_publish_commands(subparsers)
     
     return parser
-
 
 def register_create_commands(subparsers):
     """
@@ -87,7 +89,6 @@ def register_create_commands(subparsers):
     
     # 'init-repo' command - Initialize git and GitHub repositories
     subparsers.add_parser("init-repo", help="Initialize Git and GitHub repositories")
-
 
 def register_snapshot_commands(subparsers):
     """
@@ -114,20 +115,13 @@ def register_snapshot_commands(subparsers):
         help="List all available snapshots and exit"
     )
     
-    # 'restore' command
+def register_restore_commands(subparsers):
+    # 'restore' command - simplified without mode parameter
     restore_parser = subparsers.add_parser("restore", help="Restore from a snapshot")
     restore_parser.add_argument(
         'snapshot_id',
         nargs='?',
         help="ID or path of the snapshot to restore from"
-    )
-    restore_parser.add_argument(
-        '-m', '--mode',
-        type=str,
-        choices=['safe', 'overwrite', 'force'],
-        default='overwrite',
-        help=("Restoration mode: 'safe' skips existing files, 'overwrite' replaces "
-              "existing files (default), 'force' replaces all files.")
     )
     restore_parser.add_argument(
         '--no-backup',
@@ -152,8 +146,7 @@ def register_snapshot_commands(subparsers):
         help="Exclude files matching this glob pattern (can be used multiple times)"
     )
 
-
-def register_lifecycle_commands(subparsers):
+def register_rename_commands(subparsers):
     """
     Register commands related to lifecycle management.
     
@@ -164,11 +157,13 @@ def register_lifecycle_commands(subparsers):
     rename_parser = subparsers.add_parser("rename", help="Rename the package, update all references, and optionally rename GitHub repository")
     rename_parser.add_argument("new_name", help="New name for the package")
     rename_parser.add_argument("--skip-github", action="store_true", help="Skip GitHub repository renaming even if GitHub token is available")
-    
+
+def register_push_commands(subparsers):
     # Other commands remain unchanged
     # 'push' command
     subparsers.add_parser("push", help="Commit all changes and push to GitHub")
-    
+
+def register_publish_commands(subparsers):    
     # 'publish' command
     publish_parser = subparsers.add_parser("publish", help="Build and upload package to PyPI")
     publish_parser.add_argument(
@@ -183,6 +178,7 @@ def register_lifecycle_commands(subparsers):
         help="Version increment type (default: patch)"
     )
 
+def register_replace_commands(subparsers):
     # 'replace' command
     replace_parser = subparsers.add_parser("replace", help="Safely replace text across all files")
     replace_parser.add_argument("old_pattern", help="Pattern to search for")
@@ -193,7 +189,6 @@ def register_lifecycle_commands(subparsers):
     replace_parser.add_argument("-e", "--exclude", action="append", dest="exclude_patterns", help="Exclude files matching this glob pattern")
     replace_parser.add_argument("--no-backup", action="store_true", help="Don't create a backup snapshot before replacement")
     replace_parser.add_argument("--no-preview", action="store_true", help="Don't show preview of changes")
-
 
 @error_handler
 def handle_version_command():
@@ -206,7 +201,6 @@ def handle_version_command():
     from pkgmngr import __version__
     print(f"pkgmngr version {__version__}")
     return 0
-
 
 @error_handler
 def dispatch_command(args):
@@ -261,7 +255,6 @@ def dispatch_command(args):
     else:
         return 1
 
-
 @error_handler
 def handle_snapshot_command(args):
     """
@@ -284,7 +277,6 @@ def handle_snapshot_command(args):
     
     # Default snapshot behavior
     return handle_snapshot_create(args)
-
 
 @error_handler
 def handle_restore_command(args):
@@ -323,8 +315,7 @@ def handle_restore_command(args):
         return handle_selective_restore(snapshot_file, target_dir, args, create_backup)
     else:
         # Use the standard restore
-        return handle_standard_restore(snapshot_file, target_dir, args.mode, create_backup)
-
+        return handle_standard_restore(snapshot_file, target_dir, create_backup)
 
 def handle_selective_restore(snapshot_file, target_dir, args, create_backup):
     """
@@ -348,7 +339,6 @@ def handle_selective_restore(snapshot_file, target_dir, args, create_backup):
             args.patterns,
             args.exclude_patterns,
             args.interactive,
-            args.mode,
             create_backup,
             None  # No custom backup path
         )
@@ -357,15 +347,13 @@ def handle_selective_restore(snapshot_file, target_dir, args, create_backup):
         display_error(f"Error during selective restoration: {e}")
         return 1
 
-
-def handle_standard_restore(snapshot_file, target_dir, mode, create_backup):
+def handle_standard_restore(snapshot_file, target_dir, create_backup):
     """
     Handle standard restore operation.
     
     Args:
         snapshot_file: Path to the snapshot file
         target_dir: Directory to restore to
-        mode: Restoration mode
         create_backup: Whether to create a backup
         
     Returns:
@@ -377,7 +365,6 @@ def handle_standard_restore(snapshot_file, target_dir, mode, create_backup):
         backup_file = restore_from_snapshot(
             snapshot_file, 
             target_dir,
-            mode,
             create_backup,
             None  # No custom backup path
         )

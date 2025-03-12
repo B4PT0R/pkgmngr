@@ -98,9 +98,8 @@ def generate_snapshot_content(start_path, gitignore_spec, output_folder, timesta
     content = [
         f"# {package_name} - Package Snapshot - Generated on {timestamp}",
         "",
-        "**Note:** All triple prime characters (′′′) within file content blocks should be interpreted as triple backticks.",
-        "This convention prevents formatting issues in the snapshot markdown.",
-        "(Don't forget to replace them when you copy/paste directly from the snapshot.)"
+        "**Note:** This snapshot uses code blocks with varying numbers of backticks to properly handle nested code blocks.",
+        "The number of backticks in each file's code fence is intentionally set to be more than any sequence of backticks within the file content.",
         "",
         "",
     ]
@@ -132,11 +131,12 @@ def generate_snapshot_content(start_path, gitignore_spec, output_folder, timesta
         "",
     ])
     
-    # Add file contents
+    # Add file contents with enhanced backtick handling
     file_contents = collect_file_contents(start_path, file_paths)
     content.extend(file_contents)
     
     return content
+
 
 def get_package_name_for_snapshot(start_path):
     """
@@ -161,6 +161,7 @@ def get_package_name_for_snapshot(start_path):
     # Use directory name as fallback
     import os
     return os.path.basename(os.path.abspath(start_path))
+
 
 def load_gitignore_patterns(start_path):
     """
@@ -257,7 +258,7 @@ def should_ignore(path: str, gitignore_spec, root_path: str, output_folder: str 
         if path_abs == output_path or path_abs.startswith(output_path + os.sep):
             return True
     
-    # Handle .gitignore file specially - we don't want to ignore it
+    # Handle .gitignore file specially - we want to include it in snapshots
     if os.path.basename(path) == '.gitignore':
         return True
     
@@ -525,46 +526,57 @@ def collect_file_paths(start_path, gitignore_spec, output_folder):
     return file_paths
 
 
-def collect_file_contents(start_path, file_paths):
+def detect_max_backtick_sequence(content: str) -> int:
     """
-    Collect file contents for all paths.
+    Detect the maximum number of consecutive backticks in the content.
     
     Args:
-        start_path: The root directory to snapshot
-        file_paths: List of file paths to include
+        content: The content to analyze
         
     Returns:
-        List of content lines for all files
+        The maximum number of consecutive backticks found plus one
     """
-    content = []
+    # Use regex to find all sequences of backticks
+    import re
+    backtick_sequences = re.findall(r'`+', content)
     
-    # Define Unicode character for inner code block replacement
-    BACKTICK_REPLACEMENT = '′'  # Prime character (U+2032)
+    if not backtick_sequences:
+        return 3  # Default minimum for code blocks
     
-    for rel_path in file_paths:
-        file_path = os.path.join(start_path, rel_path)
-        anchor = create_filename_anchor(rel_path)
-        # Determine language for syntax highlighting
-        language = get_file_language(file_path)
+    # Find the length of the longest sequence
+    max_backticks = max(len(seq) for seq in backtick_sequences)
+    
+    # Return the max count plus one to ensure we have one more than any inner sequence
+    # Minimum of 3 backticks for code blocks
+    return max(3, max_backticks + 1)
 
-        if is_binary_file(file_path):
-            content.extend(format_binary_file(rel_path, anchor))
-        else:
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    file_content = f.read()
-                    
-                    # If the file contains triple backticks, replace them with primes
-                    # This prevents them from breaking the outer code blocks
-                    if '```' in file_content:
-                        # Replace backticks with the unicode character
-                        file_content = file_content.replace('```', f"{BACKTICK_REPLACEMENT}{BACKTICK_REPLACEMENT}{BACKTICK_REPLACEMENT}")
-                    
-                    content.extend(format_text_file(rel_path, anchor, language, file_content))
-            except UnicodeDecodeError:
-                content.extend(format_binary_file(rel_path, anchor))
+
+def format_text_file(rel_path, anchor, language, file_content):
+    """
+    Format a text file entry for the snapshot with enhanced backtick handling.
     
-    return content
+    Args:
+        rel_path: Relative path of the file
+        anchor: HTML anchor for the file
+        language: Language identifier for syntax highlighting
+        file_content: Content of the file
+        
+    Returns:
+        List of formatted content lines
+    """
+    # Detect the maximum number of consecutive backticks in the content
+    # and use one more for our code block
+    backtick_count = detect_max_backtick_sequence(file_content)
+    code_fence = '`' * backtick_count
+    
+    return [
+        f"<a id=\"{anchor}\"></a>",
+        f"### {rel_path}",
+        f"{code_fence}{language}",
+        file_content,
+        code_fence,
+        "",  # Empty line after file content
+    ]
 
 
 def format_binary_file(rel_path, anchor):
@@ -586,27 +598,36 @@ def format_binary_file(rel_path, anchor):
     ]
 
 
-def format_text_file(rel_path, anchor, language, file_content):
+def collect_file_contents(start_path, file_paths):
     """
-    Format a text file entry for the snapshot.
+    Collect file contents for all paths with enhanced backtick handling.
     
     Args:
-        rel_path: Relative path of the file
-        anchor: HTML anchor for the file
-        language: Language identifier for syntax highlighting
-        file_content: Content of the file
+        start_path: The root directory to snapshot
+        file_paths: List of file paths to include
         
     Returns:
-        List of formatted content lines
+        List of content lines for all files
     """
-    return [
-        f"<a id=\"{anchor}\"></a>",
-        f"### {rel_path}",
-        f"```{language}",
-        file_content,
-        "```",
-        "",  # Empty line after file content
-    ]
+    content = []
+    
+    for rel_path in file_paths:
+        file_path = os.path.join(start_path, rel_path)
+        anchor = create_filename_anchor(rel_path)
+        # Determine language for syntax highlighting
+        language = get_file_language(file_path)
+
+        if is_binary_file(file_path):
+            content.extend(format_binary_file(rel_path, anchor))
+        else:
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    file_content = f.read()
+                    content.extend(format_text_file(rel_path, anchor, language, file_content))
+            except UnicodeDecodeError:
+                content.extend(format_binary_file(rel_path, anchor))
+    
+    return content
 
 
 def parse_snapshot_file(snapshot_file_path: str):
@@ -676,7 +697,7 @@ def extract_project_name_from_snapshot(content):
 
 def extract_file_contents_from_snapshot(content):
     """
-    Extract file contents from snapshot content.
+    Extract file contents from snapshot content with enhanced backtick handling.
     
     Args:
         content: The full snapshot content
@@ -692,13 +713,17 @@ def extract_file_contents_from_snapshot(content):
         file_path = match.group(1).strip()
         file_contents[file_path] = "[Binary file - contents not shown]"
     
-    # Pattern to match regular files with code blocks
-    code_pattern = r'<a id="[^"]+"></a>\n### ([^\n]+)\n(?:```)(?:[^\n]*)\n(.*?)\n(?:```)'
-    for match in re.finditer(code_pattern, content, re.DOTALL):
+    # Enhanced pattern to match regular files with code blocks using variable-length code fences
+    # The pattern captures:
+    # 1. The filename
+    # 2. The opening code fence with optional language identifier
+    # 3. The language identifier
+    # 4. The content inside the code block
+    file_pattern = r'<a id="[^"]+"></a>\n### ([^\n]+)\n(`{3,})([^\n]*)\n(.*?)\n\2'
+    
+    for match in re.finditer(file_pattern, content, re.DOTALL):
         file_path = match.group(1).strip()
-        file_content = match.group(2)
-        # Replace any primes used for inner code blocks back to backticks
-        file_content = file_content.replace("′′′", "```")
+        file_content = match.group(4)  # The content inside the code block
         file_contents[file_path] = file_content
-
+    
     return file_contents

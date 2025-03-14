@@ -39,8 +39,6 @@ pip install pkgmngr
 pkgmngr new my-package
 cd my-package
 
-#Review the default pkgmngr.toml config file before creating your package
-
 # Generate the package files
 pkgmngr create
 

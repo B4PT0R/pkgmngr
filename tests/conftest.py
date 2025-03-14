@@ -188,7 +188,6 @@ Test snapshot comment
 1. [test_pkg/__init__.py](#test_pkg-__init__py)
 2. [test_pkg/__main__.py](#test_pkg-__main__py)
 3. [README.md](#readmemd)
-4. [.gitignore](#gitignore)
 
 ## Files
 
@@ -214,17 +213,6 @@ print("Hello from test_pkg!")
 # Test Package
 
 A test package for snapshot testing.
-```
-
-<a id="gitignore"></a>
-### .gitignore
-```
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Snapshots
-snapshots/
 ```
 """)
     

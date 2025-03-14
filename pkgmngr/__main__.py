@@ -64,6 +64,8 @@ Examples:
     
     # Register all command subparsers
     register_create_commands(subparsers)
+    register_wrap_commands(subparsers)
+    register_update_commands(subparsers)
     register_snapshot_commands(subparsers)
     register_restore_commands(subparsers)
     register_rename_commands(subparsers)
@@ -89,6 +91,47 @@ def register_create_commands(subparsers):
     
     # 'init-repo' command - Initialize git and GitHub repositories
     subparsers.add_parser("init-repo", help="Initialize Git and GitHub repositories")
+
+def register_wrap_commands(subparsers):
+    """
+    Register commands related to wrapping existing code.
+    
+    Args:
+        subparsers: Subparsers object to add to
+    """
+    # 'wrap' command
+    wrap_parser = subparsers.add_parser("wrap", help="Wrap existing code into a proper package structure")
+    wrap_parser.add_argument(
+        "--name", 
+        type=str,
+        dest="package_name",
+        help="Name for the package (defaults to current directory name)"
+    )
+    wrap_parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Automatically overwrite existing files without prompting"
+    )
+    wrap_parser.add_argument(
+        "--no-overwrite",
+        action="store_true",
+        help="Never overwrite existing files"
+    )
+
+def register_update_commands(subparsers):
+    """
+    Register commands related to updating package structure.
+    
+    Args:
+        subparsers: Subparsers object to add to
+    """
+    # 'update' command
+    update_parser = subparsers.add_parser("update", help="Update package structure to match current configuration")
+    update_parser.add_argument(
+        "--force", "-f",
+        action="store_true",
+        help="Force updates without confirmation prompts"
+    )
 
 def register_snapshot_commands(subparsers):
     """
@@ -225,6 +268,16 @@ def dispatch_command(args):
     elif args.command == "create":
         from pkgmngr.lifecycle.cli import create_from_config
         return create_from_config()
+        
+    elif args.command == "wrap":
+        from pkgmngr.lifecycle.wrap import wrap_existing_code
+        # Determine overwrite mode based on args
+        overwrite = True if args.overwrite else (False if args.no_overwrite else None)
+        return wrap_existing_code(args.package_name, overwrite)
+        
+    elif args.command == "update":
+        from pkgmngr.lifecycle.update import update_package_structure
+        return update_package_structure(None, args.force)
     
     elif args.command == "init-repo":
         from pkgmngr.lifecycle.cli import init_repository

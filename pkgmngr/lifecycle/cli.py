@@ -8,7 +8,7 @@ from pathlib import Path
 from pkgmngr.common.config import load_config, create_default_config, get_github_info
 from pkgmngr.common.cli import confirm_action, display_success, display_error, display_info, display_warning
 from pkgmngr.common.errors import error_handler, ConfigError, GitError
-from .core import create_package_structure
+from .create import create_package_structure
 from .github import init_git_repo
 
 

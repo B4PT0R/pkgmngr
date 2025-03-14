@@ -39,6 +39,8 @@ pip install pkgmngr
 pkgmngr new my-package
 cd my-package
 
+#Review the default pkgmngr.toml config file before creating your package
+
 # Generate the package files
 pkgmngr create
 
@@ -57,11 +59,9 @@ pkgmngr push
 pkgmngr publish
 ```
 
-## ✨ Features
+## 📋 Features and Usage Guide
 
 ### 📝 Package Creation
-
-With a single command, pkgmngr creates a standardized Python package structure:
 
 ```bash
 # Create a new package directory with config file
@@ -77,17 +77,44 @@ pkgmngr create
 
 This creates a complete package structure with:
 - Python module files with proper imports
-- tests directory with pytest setup
-- setup.py and pyproject.toml with appropriate metadata
+- Tests directory with pytest setup
+- Setup.py and pyproject.toml with appropriate metadata
 - README.md, LICENSE, and other standard files
 - .gitignore with sensible defaults
+
+The `create` command uses your `pkgmngr.toml` configuration file to generate a standardized package structure. You can customize aspects like author, version, dependencies, and Python version requirements in this file.
+
+### 🔄 Package Wrapping
+
+Already started coding but want to transform your code into a proper package structure? The `wrap` command helps with that:
+
+```bash
+# In a directory with existing Python files
+pkgmngr wrap
+
+# Specify a custom package name
+pkgmngr wrap --name my-custom-package
+
+# Auto-overwrite existing files
+pkgmngr wrap --overwrite
+```
+
+What the `wrap` command does:
+- Creates a proper package structure around your existing code
+- Moves Python files into the main package directory
+- Organizes test files into a tests/ directory
+- Creates standard files (setup.py, README.md, LICENSE, etc.)
+- Adds `__init__.py` files to create proper Python packages
+- Preserves your existing code while providing a proper package structure
+
+This is perfect when you've started with a prototype or script and want to transform it into a distributable package without disrupting your existing code.
 
 ### 📸 Package Snapshots
 
 Create comprehensive code documentation snapshots with a single command:
 
 ```bash
-# Create a snapshot with an optional comment
+# Create a snapshot with a comment
 pkgmngr snapshot -m "Implemented core features"
 
 # List all available snapshots
@@ -100,121 +127,15 @@ Snapshots include:
 - All file contents with proper syntax highlighting
 - Metadata and comments
 
-These snapshots are perfect for:
+Snapshots are perfect for:
 - Sharing code context with AI assistants
 - Documenting code for team members
 - Creating restoration points
 - Providing self-contained project documentation
 
-### 🔄 Package Lifecycle Management
+### 🔙 Snapshot Restoration
 
-#### Rename Packages
-
-Easily rename your package and automatically update all references:
-
-```bash
-# Rename a package (updates all references and directory structure)
-pkgmngr rename new-package-name
-```
-
-This updates the package directory name, all references in your code, and even renames the GitHub repository if available.
-
-#### Global Search & Replace
-
-Safely perform search and replace operations across your entire codebase:
-
-```bash
-# Replace text across all files
-pkgmngr replace "old_text" "new_text"
-
-# Use regular expressions
-pkgmngr replace --regex "function\s+old_name" "function new_name"
-```
-
-Includes preview mode, automatic backups, and selective file targeting for safety.
-
-#### GitHub Integration
-
-Seamlessly integrate with GitHub:
-
-```bash
-# Initialize Git and create GitHub repository
-pkgmngr init-repo
-
-# Push changes with an interactive commit message
-pkgmngr push
-```
-
-#### PyPI Publishing
-
-Publish your package with automatic version increments:
-
-```bash
-# Publish to TestPyPI for testing
-pkgmngr publish --test
-
-# Publish to PyPI with automatic version increment
-pkgmngr publish
-
-# Publish with specific version increment
-pkgmngr publish --bump minor
-```
-
-## 📋 Detailed Usage Guide
-
-### Creating a New Package
-
-```bash
-# Create a new package
-pkgmngr new my-package
-cd my-package
-```
-
-This creates a directory with a `pkgmngr.toml` configuration file that lets you customize:
-- Package metadata (name, version, author, etc.)
-- GitHub integration settings
-- Python version requirements
-- Dependencies and development dependencies
-
-After editing the config (if desired), generate the package structure:
-
-```bash
-pkgmngr create
-```
-
-This creates a complete package structure:
-```
-./
-├── my_package/
-│   ├── __init__.py
-│   └── __main__.py
-├── tests/
-│   ├── test_my_package.py
-│   └── run_tests.py
-├── setup.py
-├── README.md
-├── MANIFEST.in
-├── pyproject.toml
-├── LICENSE
-└── .gitignore
-```
-
-### Taking and Restoring Snapshots
-
-#### Creating Snapshots
-
-```bash
-# Create a snapshot with a comment
-pkgmngr snapshot -m "Implemented core features"
-```
-
-Snapshots are saved as markdown files in a `snapshots` directory, containing:
-- Pretty-printed directory tree
-- Table of contents with links to each file
-- Full file contents with syntax highlighting
-- Metadata about the snapshot
-
-#### Restoring from Snapshots
+Easily restore your project to a previous state using snapshots:
 
 ```bash
 # Restore from a specific snapshot (by number)
@@ -230,12 +151,66 @@ pkgmngr restore -p "*.py"
 pkgmngr restore -e "temp_*.py"
 ```
 
-Restoration modes:
-- `safe`: Skips existing files
-- `overwrite`: Replaces existing files (default)
-- `force`: Replaces all files, including read-only
+The restoration process automatically creates a backup of your current state before applying changes, allowing you to safely experiment with restoring different versions.
 
-### GitHub Integration
+### 🔄 Configuration Updates
+
+When you've modified your `pkgmngr.toml` configuration file, you can apply those changes with:
+
+```bash
+# Update package files to match current configuration
+pkgmngr update
+
+# Force updates without confirmation prompts
+pkgmngr update --force
+```
+
+The `update` command:
+- Regenerates setup.py to match current configuration
+- Updates standard files that depend on config options (LICENSE)
+- Renames the package directory if package name has changed
+- Updates Git repository description
+- Updates GitHub repository "About" section (if GITHUB_TOKEN is available)
+
+### 📋 Rename Packages
+
+Easily rename your package and automatically update all references:
+
+```bash
+# Rename a package (updates all references and directory structure)
+pkgmngr rename new-package-name
+```
+
+This updates the package directory name, all references in your code, and even renames the GitHub repository if available.
+
+### 🔍 Global Search & Replace
+
+Safely perform search and replace operations across your entire codebase:
+
+```bash
+# Replace text across all files
+pkgmngr replace "old_text" "new_text"
+
+# Use regular expressions
+pkgmngr replace --regex "function\s+old_name" "function new_name"
+
+# Preview changes before applying
+pkgmngr replace "old_text" "new_text" --no-preview
+```
+
+Includes preview mode, automatic backups, and selective file targeting for safety.
+
+### 🔄 GitHub Integration
+
+Seamlessly integrate with GitHub:
+
+```bash
+# Initialize Git and create GitHub repository
+pkgmngr init-repo
+
+# Push changes with an interactive commit message
+pkgmngr push
+```
 
 To use GitHub integration, set up a GitHub Personal Access Token:
 
@@ -246,29 +221,12 @@ To use GitHub integration, set up a GitHub Personal Access Token:
    export GITHUB_TOKEN=your_token_here
    ```
 
-Initialize Git and create a GitHub repository:
+### 📦 PyPI Publishing
+
+Publish your package with automatic version increments:
 
 ```bash
-pkgmngr init-repo
-```
-
-Push changes to GitHub:
-
-```bash
-pkgmngr push
-```
-
-### PyPI Publishing
-
-Before publishing, ensure you have configured your PyPI credentials using one of these methods:
-- A `.pypirc` file in your home directory
-- Environment variables: `TWINE_USERNAME` and `TWINE_PASSWORD`
-- API tokens (recommended for security)
-
-Publishing commands:
-
-```bash
-# Publish to TestPyPI
+# Publish to TestPyPI for testing
 pkgmngr publish --test
 
 # Publish to PyPI with automatic patch version increment
@@ -278,23 +236,10 @@ pkgmngr publish
 pkgmngr publish --bump minor
 ```
 
-### Package-wide Text Replacement
-
-The `replace` command provides a safe way to perform global find/replace operations:
-
-```bash
-# Basic replacement
-pkgmngr replace "old_text" "new_text"
-
-# Advanced options
-pkgmngr replace "old_api" "new_api" --pattern "*.py" --regex --case-insensitive
-```
-
-Safety features:
-- Automatic backup snapshot before changes
-- Preview of changes with file diffs
-- Confirmation prompt before applying changes
-- Filtering by file patterns and exclusions
+Before publishing, ensure you have configured your PyPI credentials using one of these methods:
+- A `.pypirc` file in your home directory
+- Environment variables: `TWINE_USERNAME` and `TWINE_PASSWORD`
+- API tokens (recommended for security)
 
 ## 🤝 Contributing
 
